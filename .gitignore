@@ -1,0 +1,21 @@
+# dependencies and build output
+node_modules/
+dist/
+coverage/
+
+# env and local secrets
+.env
+.env.*
+
+# local tool settings
+.claude/settings.local.json
+
+# editor junk
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# spec/vectors/ is a deliverable and MUST stay committed
