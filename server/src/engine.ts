@@ -1,4 +1,4 @@
-import type { DatabaseSync } from "node:sqlite";
+import type Database from "better-sqlite3";
 import {
     MerkleTree,
     SPEC_VERSION,
@@ -15,7 +15,7 @@ import {
 import { addressOfPrivateKey } from "foreseer.ts";
 import { REFERENCE_CODE_VERSION, REFERENCE_TEST_KEY } from "foreseer.ts/reference";
 import type { Eip712Domain, EpochClose, Hex, Receipt, Rule, SignedReceipt } from "foreseer.ts";
-import type { EpochRow, ReceiptRow } from "./db.js";
+import type { EpochRow, ReceiptRow } from "./db";
 
 export class ApiError extends Error {
     constructor(
@@ -27,7 +27,7 @@ export class ApiError extends Error {
 }
 
 export interface EngineOptions {
-    db: DatabaseSync;
+    db: Database.Database;
     privateKey?: Hex;
     chainId?: bigint;
     epochSeconds?: number;
@@ -56,7 +56,7 @@ export class Engine {
     readonly domain: Eip712Domain;
     readonly teeId: Hex;
     readonly epochSeconds: number;
-    private readonly db: DatabaseSync;
+    private readonly db: Database.Database;
     private readonly key: Uint8Array;
     private readonly now: () => number;
 

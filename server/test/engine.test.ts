@@ -5,8 +5,8 @@ import { afterAll, describe, expect, it } from "vitest";
 import { dice, coinflip, toBytes, verifyCommit } from "foreseer.ts";
 import { verifyEpoch } from "foreseer.ts/verify";
 import type { Hex, SignedReceipt } from "foreseer.ts";
-import { openDb } from "../src/db.js";
-import { Engine, ApiError, rowToReceipt } from "../src/engine.js";
+import { openDb } from "../src/db";
+import { Engine, ApiError, rowToReceipt } from "../src/engine";
 
 const diceRule = dice({ target: 4999, mode: "over" });
 const flipRule = coinflip();

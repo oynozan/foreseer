@@ -2,8 +2,8 @@
 
 Orchestration service for Foreseer (Phase 2 of the [root roadmap](../TODO.md)):
 epoch lifecycle on a timer, SQLite receipt store, verify API, operator API
-keys. Zero runtime dependencies beyond `foreseer.ts`: plain `node:http` and
-the built-in `node:sqlite`.
+keys. Built on Nest.js (Express platform) with `better-sqlite3` for storage,
+run directly through `tsx` (no build step, no Nest CLI).
 
 SIMULATED TEE: this server generates and stores epoch seeds itself (in
 SQLite) and signs with a configurable key. Phase 3 replaces exactly this part
@@ -21,7 +21,7 @@ pnpm test
 pnpm typecheck
 ```
 
-Node >= 22 (uses the built-in `node:sqlite`).
+Node >= 22.
 
 ## Configuration (env)
 

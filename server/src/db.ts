@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import Database from "better-sqlite3";
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS operators (
@@ -40,10 +40,10 @@ CREATE TABLE IF NOT EXISTS receipts (
 CREATE INDEX IF NOT EXISTS receipts_by_seed ON receipts(epoch_id, client_seed);
 `;
 
-export function openDb(path: string): DatabaseSync {
-    const db = new DatabaseSync(path);
-    db.exec("PRAGMA journal_mode = WAL");
-    db.exec("PRAGMA foreign_keys = ON");
+export function openDb(path: string): Database.Database {
+    const db = new Database(path);
+    db.pragma("journal_mode = WAL");
+    db.pragma("foreign_keys = ON");
     db.exec(SCHEMA);
     return db;
 }

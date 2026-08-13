@@ -4,25 +4,33 @@
   "private": true,
   "description": "Foreseer orchestration service: epochs, receipt store, verify API, operator keys",
   "license": "MIT",
-  "type": "module",
   "engines": {
     "node": ">=22"
   },
   "scripts": {
-    "dev": "tsx watch src/index.ts",
-    "start": "tsx src/index.ts",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write ."
   },
   "dependencies": {
-    "foreseer.ts": "file:../packages/ts"
+    "@nestjs/common": "^11.1.29",
+    "@nestjs/core": "^11.1.29",
+    "@nestjs/platform-express": "^11.1.29",
+    "better-sqlite3": "^13.0.3",
+    "foreseer.ts": "file:../packages/ts",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
+    "@swc/core": "^1.15.47",
+    "@types/better-sqlite3": "^9.6.0",
     "@types/node": "^26.2.0",
     "prettier": "^3.9.6",
     "tsx": "^4.23.12",
     "typescript": "6",
+    "unplugin-swc": "^1.5.11",
     "vitest": "^4.1.10"
   }
 }

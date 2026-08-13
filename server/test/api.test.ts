@@ -1,16 +1,18 @@
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { NestFactory } from "@nestjs/core";
+import type { INestApplication } from "@nestjs/common";
 import { dice, receiptDigest, recoverSigner, toBytes, verifyCommit, verifyMerkleProof } from "foreseer.ts";
 import { verifyOutcome } from "foreseer.ts/verify";
 import type { Hex, Receipt } from "foreseer.ts";
-import { openDb } from "../src/db.js";
-import { Engine } from "../src/engine.js";
-import { createApi } from "../src/api.js";
+import { openDb } from "../src/db";
+import { Engine } from "../src/engine";
+import { AppModule } from "../src/app.module";
 
 const ADMIN = "test-admin-key";
 const db = openDb(":memory:");
 const engine = new Engine({ db, epochSeconds: 3600 });
-const server = createApi({ db, engine, adminKey: ADMIN });
+let app: INestApplication;
 let base = "";
 let apiKey = "";
 const diceRule = dice({ target: 4999, mode: "over" });
@@ -42,12 +44,14 @@ async function call(method: string, path: string, body?: unknown, headers: Recor
 }
 
 beforeAll(async () => {
-    await new Promise<void>((resolve) => server.listen(0, resolve));
-    base = `http://localhost:${(server.address() as AddressInfo).port}`;
+    app = await NestFactory.create(AppModule.forRoot({ db, engine, adminKey: ADMIN }), { logger: false });
+    await app.listen(0);
+    const address = (app.getHttpServer() as { address(): AddressInfo | string | null }).address() as AddressInfo;
+    base = `http://localhost:${address.port}`;
 });
 
-afterAll(() => {
-    server.close();
+afterAll(async () => {
+    await app.close();
     db.close();
 });
 

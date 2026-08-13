@@ -4,7 +4,7 @@ Roadmap context: [root TODO.md](../TODO.md).
 
 ## Phase 2 MVP (done)
 
-- [x] Runtime and framework: Node 22, no framework (node:http), node:sqlite (recorded 2026-08-13)
+- [x] Runtime and framework: Node 22, Nest.js (platform-express), better-sqlite3 (decided by the developer 2026-08-13)
 - [x] Epoch scheduler: open, resolve, close epochs on a timer (Engine.tick)
 - [x] Receipt store on SQLite (operators, rules, epochs, receipts; crash-safe state)
 - [x] Verify API: receipts, Merkle proofs, revealed seeds, server-side check endpoint
