@@ -4,67 +4,51 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Foreseer Verifier</title>
-<style>
-    :root { --green: #16a34a; --red: #dc2626; --ink: #111827; --mut: #6b7280; --line: #e5e7eb; }
-    * { box-sizing: border-box; }
-    body { font: 15px/1.5 system-ui, sans-serif; color: var(--ink); margin: 0; background: #f8fafc; }
-    header { background: #0f172a; color: #f8fafc; padding: 20px 24px; }
-    header h1 { margin: 0; font-size: 20px; }
-    header a { color: #7dd3fc; text-decoration: none; }
-    main { max-width: 960px; margin: 0 auto; padding: 24px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    label { display: block; font-size: 12px; color: var(--mut); margin: 10px 0 2px; }
-    textarea, input { width: 100%; font: 12px/1.4 ui-monospace, monospace; padding: 8px;
-        border: 1px solid var(--line); border-radius: 6px; background: #fff; }
-    textarea { min-height: 90px; resize: vertical; }
-    button { margin: 12px 8px 0 0; padding: 8px 16px; border: 0; border-radius: 6px;
-        background: #0f172a; color: #fff; cursor: pointer; font-size: 14px; }
-    button.alt { background: #e2e8f0; color: var(--ink); }
-    .check { padding: 8px 10px; border-left: 3px solid var(--line); margin: 6px 0; background: #fff; }
-    .check small { display: block; color: var(--mut); }
-    .check.green { border-color: var(--green); } .check.green .dot { color: var(--green); }
-    .check.red { border-color: var(--red); } .check.red .dot { color: var(--red); }
-    .check.chain { border-color: #f59e0b; } .check.chain .dot { color: #f59e0b; }
-    .verdict { font-weight: 600; } .verdict.green { color: var(--green); } .verdict.red { color: var(--red); }
-    .loader { display: flex; gap: 8px; align-items: end; }
-    .loader input { max-width: 340px; }
-    @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
-</style>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@400;500;700&family=Ubuntu+Mono&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<header>
-    <h1>Foreseer receipt verifier</h1>
-    <p>Every check runs in your browser with the open source
-        <a href="https://github.com/">foreseer.ts</a> library. Nothing you paste leaves this page.
-        <a href="index.html">About the protocol</a></p>
+<header class="site">
+    <span class="pill">runs entirely in your browser</span>
+    <h1>Foreseer <span class="accent">receipt verifier</span></h1>
+    <p>Every check runs locally with the open source foreseer.ts library.
+        Nothing you paste leaves this page. <a href="index.html">About the protocol</a></p>
 </header>
 <main>
-    <div class="loader">
-        <div><label>Server URL (optional)</label><input id="server" placeholder="http://localhost:8787"></div>
-        <div><label>Epoch</label><input id="epochId" size="6" value="1"></div>
-        <div><label>Bet</label><input id="betId" size="6" value="0"></div>
-        <button id="load" class="alt">Load from server</button>
-        <button id="example" class="alt">Load golden example</button>
+    <div class="card loader">
+        <div class="grow"><label>Server URL (optional)</label><input id="server" placeholder="http://localhost:8787"></div>
+        <div class="tiny"><label>Epoch</label><input id="epochId" value="1"></div>
+        <div class="tiny"><label>Bet</label><input id="betId" value="0"></div>
+        <button id="load" class="button alt">Load from server</button>
+        <button id="example" class="button alt">Load golden example</button>
     </div>
-    <div class="grid">
-        <div>
-            <label>Signed receipt JSON ({"receipt": ..., "signature": "0x..."})</label>
-            <textarea id="receipt"></textarea>
-            <label>Rule JSON</label>
-            <textarea id="rule"></textarea>
+    <div class="card">
+        <div class="grid">
+            <div>
+                <label>Signed receipt JSON ({"receipt": ..., "signature": "0x..."})</label>
+                <textarea id="receipt" style="min-height:180px"></textarea>
+                <label>Rule JSON</label>
+                <textarea id="rule"></textarea>
+                <label>Merkle proof (JSON array of hex)</label>
+                <textarea id="proof"></textarea>
+            </div>
+            <div>
+                <label>Revealed server seed (hex)</label><input id="serverSeed">
+                <label>Seed commitment (hex)</label><input id="seedCommit">
+                <label>Merkle root (hex)</label><input id="merkleRoot">
+                <label>Expected TEE address (from attestation registry)</label><input id="teeId">
+                <label>Chain id</label><input id="chainId" value="114">
+            </div>
         </div>
-        <div>
-            <label>Revealed server seed (hex)</label><input id="serverSeed">
-            <label>Seed commitment (hex)</label><input id="seedCommit">
-            <label>Merkle root (hex)</label><input id="merkleRoot">
-            <label>Merkle proof (JSON array of hex)</label><textarea id="proof"></textarea>
-            <label>Expected TEE address (from attestation registry)</label><input id="teeId">
-            <label>Chain id</label><input id="chainId" value="114">
+        <div class="actions">
+            <button id="verify" class="button">Verify</button>
         </div>
     </div>
-    <button id="verify">Verify</button>
     <div id="results"><p>Paste a receipt or load the golden example.</p></div>
 </main>
+<footer>Foreseer, FORESEER-SPEC v0.1. MIT licensed.</footer>
 <script src="foreseer-widget.js"></script>
 </body>
 </html>

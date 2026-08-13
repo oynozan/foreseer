@@ -1,0 +1,76 @@
+/* Foreseer design system for the docs: light only */
+/* Akt is licensed; drop Akt.woff2 into docs/public/fonts/ to activate it */
+@font-face {
+    font-family: "Akt";
+    src: url("/fonts/Akt.woff2") format("woff2");
+    font-weight: 300 800;
+    font-display: swap;
+}
+
+:root {
+    --foreseer-primary: #ff6200;
+    --foreseer-mint: #d0fccd;
+    --foreseer-ink: #1d1d1d;
+}
+
+html {
+    font-family: "Akt", var(--font-ubuntu), "Ubuntu", system-ui, sans-serif;
+}
+
+body {
+    color: var(--foreseer-ink);
+}
+
+h1,
+h2,
+h3,
+h4,
+.x\:font-semibold {
+    font-family: "Akt", "Ubuntu", system-ui, sans-serif;
+}
+
+code,
+pre,
+kbd {
+    font-family: var(--font-ubuntu-mono), "Ubuntu Mono", ui-monospace, monospace;
+}
+
+/* Brand accent on the top of the viewport */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--foreseer-primary);
+    z-index: 100;
+}
+
+/* Mint highlight for selection, matching the secondary color */
+::selection {
+    background: var(--foreseer-mint);
+    color: var(--foreseer-ink);
+}
+
+/* Mermaid diagrams on the brand palette */
+svg.flowchart .node rect,
+svg.flowchart .node polygon,
+svg.flowchart .node path {
+    fill: #fff1e8 !important;
+    stroke: var(--foreseer-primary) !important;
+}
+
+svg.flowchart .nodeLabel {
+    color: var(--foreseer-ink) !important;
+}
+
+svg.flowchart .edgeLabel,
+svg.flowchart .edgeLabel p {
+    background-color: var(--foreseer-mint) !important;
+    color: var(--foreseer-ink) !important;
+}
+
+svg.flowchart .flowchart-link {
+    stroke: var(--foreseer-ink) !important;
+}

@@ -17,21 +17,35 @@ Entry points:
 | `foreseer.ts/verify` | the offline checks plus `verifyEpoch` |
 | `foreseer.ts/reference` | `ReferenceTee` and test constants |
 
-## Play a full epoch in fifteen lines
+## Play a full epoch, step by step
 
 ```ts
 import { dice, merkleProof, receiptDigest, toBytes } from "foreseer.ts";
 import { ReferenceTee } from "foreseer.ts/reference";
 import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "foreseer.ts/verify";
 
+// 1. Boot a TEE and open an epoch.
+//    The seed commitment is published before any bet exists.
 const tee = new ReferenceTee();
 const { seedCommit } = tee.openEpoch();
+
+// 2. Build a game rule: classic dice, win above 4999, pays 1.98x.
 const rule = dice({ target: 4999, mode: "over" });
+
+// 3. Place a bet. The receipt comes back already signed.
 const bet = tee.play({ clientSeed: "alice", rule });
 console.log("rolled", bet.receipt.draws[0], bet.receipt.win ? "win" : "lose");
+
+// 4. Check the signature right away, before any reveal.
 const signatureOk = verifyReceiptSignature(bet, tee.domain, tee.teeId).ok;
+
+// 5. Close the epoch: the secret seed is revealed
+//    and the Merkle root over all receipts is produced.
 const { serverSeed, merkleRoot } = tee.closeEpoch();
+
+// 6. Now run the remaining offline checks against the reveal.
 const digest = receiptDigest(bet.receipt, tee.domain);
+
 console.log({
     signature: signatureOk,
     commit: verifyCommit(serverSeed, seedCommit),

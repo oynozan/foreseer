@@ -1,0 +1,376 @@
+/* Foreseer design system: light only */
+/* Akt is licensed; drop Akt.woff2 into docs-site/fonts/ to activate it */
+@font-face {
+    font-family: "Akt";
+    src: url("fonts/Akt.woff2") format("woff2");
+    font-weight: 300 800;
+    font-display: swap;
+}
+
+:root {
+    --primary: #ff6200;
+    --primary-soft: #ffefe5;
+    --mint: #d0fccd;
+    --mint-ink: #14532d;
+    --ink: #1d1d1d;
+    --muted: #6f6f6f;
+    --line: #e8e6e3;
+    --bg: #ffffff;
+    --bg-soft: #faf9f7;
+    --red: #d92d20;
+    --red-soft: #fee4e2;
+    --font-display: "Akt", "Ubuntu", system-ui, sans-serif;
+    --font-body: "Ubuntu", system-ui, sans-serif;
+    --font-mono: "Ubuntu Mono", ui-monospace, monospace;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font: 16px/1.65 var(--font-body);
+}
+
+header.site {
+    text-align: center;
+    padding: 56px 24px 40px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+}
+
+header.site::before {
+    content: "";
+    display: block;
+    height: 4px;
+    background: var(--primary);
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+}
+
+header.site {
+    position: relative;
+}
+
+header.site h1 {
+    margin: 0 auto 10px;
+    font: 700 40px/1.15 var(--font-display);
+    letter-spacing: -0.02em;
+    max-width: 720px;
+}
+
+header.site h1 .accent {
+    color: var(--primary);
+}
+
+header.site p {
+    margin: 0 auto;
+    max-width: 640px;
+    color: var(--muted);
+}
+
+header.site a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+header.site a:hover {
+    text-decoration: underline;
+}
+
+header.site a.button {
+    color: #fff;
+}
+
+header.site a.button:hover {
+    text-decoration: none;
+}
+
+main {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 40px 24px 72px;
+}
+
+h2 {
+    font: 600 26px/1.3 var(--font-display);
+    margin: 44px 0 14px;
+}
+
+a {
+    color: var(--primary);
+}
+
+.button {
+    display: inline-block;
+    margin-top: 22px;
+    padding: 12px 26px;
+    border-radius: 10px;
+    border: 0;
+    background: var(--primary);
+    color: #fff;
+    font: 600 16px var(--font-display);
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.button:hover {
+    background: #e65800;
+}
+
+.button.alt {
+    background: var(--bg);
+    color: var(--ink);
+    border: 1px solid var(--line);
+    font-weight: 500;
+}
+
+.button.alt:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--bg);
+}
+
+.pill {
+    display: inline-block;
+    background: var(--mint);
+    color: var(--mint-ink);
+    border-radius: 999px;
+    padding: 4px 14px;
+    font: 500 13px var(--font-body);
+    margin-bottom: 18px;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+    background: var(--bg);
+    font-size: 15px;
+}
+
+th {
+    font: 600 14px var(--font-display);
+    text-align: left;
+    border-bottom: 2px solid var(--primary);
+    padding: 10px 12px;
+}
+
+td {
+    border-bottom: 1px solid var(--line);
+    padding: 10px 12px;
+}
+
+tr:nth-child(even) td {
+    background: var(--bg-soft);
+}
+
+code {
+    background: var(--bg-soft);
+    border: 1px solid var(--line);
+    padding: 1px 6px;
+    border-radius: 5px;
+    font: 13.5px var(--font-mono);
+}
+
+ol.steps {
+    padding-left: 0;
+    counter-reset: step;
+    list-style: none;
+}
+
+ol.steps li {
+    counter-increment: step;
+    margin: 14px 0;
+    padding-left: 46px;
+    position: relative;
+}
+
+ol.steps li::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: 1px;
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    background: var(--primary);
+    color: #fff;
+    font: 600 15px/30px var(--font-display);
+    text-align: center;
+}
+
+footer {
+    color: var(--muted);
+    font-size: 13px;
+    padding: 28px 24px 36px;
+    text-align: center;
+    border-top: 1px solid var(--line);
+}
+
+/* Verifier layout */
+.card {
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 20px 22px;
+    margin: 18px 0;
+}
+
+.loader {
+    display: flex;
+    gap: 14px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.loader .grow {
+    flex: 1 1 260px;
+}
+
+.loader .tiny {
+    width: 84px;
+}
+
+.loader .button {
+    margin-top: 0;
+}
+
+label {
+    display: block;
+    font: 500 12.5px var(--font-display);
+    color: var(--muted);
+    margin: 14px 0 4px;
+}
+
+.card label:first-child,
+.loader label {
+    margin-top: 0;
+}
+
+textarea,
+input {
+    width: 100%;
+    font: 13px/1.5 var(--font-mono);
+    padding: 9px 11px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--bg);
+    color: var(--ink);
+}
+
+textarea:focus,
+input:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: -1px;
+    border-color: var(--primary);
+}
+
+textarea {
+    min-height: 96px;
+    resize: vertical;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0 28px;
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-top: 6px;
+}
+
+.actions .button {
+    margin-top: 0;
+}
+
+.check {
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-left: 4px solid var(--line);
+    border-radius: 10px;
+    margin: 10px 0;
+    background: var(--bg);
+}
+
+.check small {
+    display: block;
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.check .dot {
+    margin-right: 6px;
+}
+
+.check.green {
+    border-left-color: #16a34a;
+    background: var(--mint);
+    border-color: var(--mint);
+    color: var(--mint-ink);
+}
+
+.check.green small {
+    color: var(--mint-ink);
+}
+
+.check.green .dot {
+    color: #16a34a;
+}
+
+.check.red {
+    border-left-color: var(--red);
+    background: var(--red-soft);
+    border-color: var(--red-soft);
+    color: #7a271a;
+}
+
+.check.red small {
+    color: #7a271a;
+}
+
+.check.red .dot {
+    color: var(--red);
+}
+
+.check.chain {
+    border-left-color: var(--primary);
+    background: var(--primary-soft);
+    border-color: var(--primary-soft);
+}
+
+.check.chain .dot {
+    color: var(--primary);
+}
+
+.verdict {
+    font: 600 17px var(--font-display);
+    margin: 16px 0 4px;
+}
+
+.verdict.green {
+    color: #15803d;
+}
+
+.verdict.red {
+    color: var(--red);
+}
+
+@media (max-width: 760px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    header.site h1 {
+        font-size: 30px;
+    }
+}

@@ -3,21 +3,25 @@
 Foreseer is a monorepo with four moving parts and one contract between
 them: FORESEER-SPEC v0.1 plus its golden test vectors.
 
+```mermaid
+flowchart TB
+    P["Players"] --> O["Operators<br/>game frontends"]
+    O -->|"x-api-key"| S["server/<br/>Nest.js + SQLite<br/>epochs, receipts, verify API, billing"]
+    S -->|"actions"| T["tee/<br/>Go FCE extension on Flare Confidential Compute<br/>signs receipts and epoch closes"]
+    T -->|"commit + anchor"| C["contracts<br/>ForeseerInstructionSender + OperatorBond<br/>on Flare"]
+    P -.->|"verify offline"| L["packages/ts<br/>foreseer.ts: reference engine<br/>and the player's verifier"]
+    L -.->|"reads anchors"| C
+    SPEC["spec/SPEC.md + golden vectors"] === S
+    SPEC === T
+    SPEC === L
+    SPEC === C
 ```
-players / operators
-        |
-        v
-  server/        Nest.js + SQLite: epochs, receipts, verify API, billing
-        |
-        v
-  tee/           Go FCE extension on Flare Confidential Compute (signs everything)
-        |
-        v
-  contracts      ForeseerInstructionSender + OperatorBond on Flare
-        ^
-        |
-  packages/ts    foreseer.ts: the reference engine and the player's verifier
-```
+
+The solid path is the money path: a bet flows from the player through the
+operator and the server into the TEE, and its evidence lands onchain. The
+dotted path is the trust path: players verify with the open source library
+against the anchored data. Every box is pinned to the same spec and the
+same golden vectors.
 
 ## The spec and the vectors are the real interface
 
