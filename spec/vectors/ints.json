@@ -1,0 +1,147 @@
+{
+  "spec": "FORESEER-SPEC v0.1 section 3",
+  "serverSeed": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "cases": [
+    {
+      "name": "dice-stream",
+      "clientSeed": "alice",
+      "nonce": 0,
+      "min": 0,
+      "max": 9999,
+      "count": 8,
+      "draws": [
+        3725,
+        4215,
+        3103,
+        2350,
+        632,
+        6485,
+        8794,
+        7468
+      ],
+      "bytesConsumed": 32
+    },
+    {
+      "name": "tiny-range",
+      "clientSeed": "alice",
+      "nonce": 1,
+      "min": 1,
+      "max": 3,
+      "count": 8,
+      "draws": [
+        2,
+        2,
+        3,
+        1,
+        1,
+        2,
+        1,
+        2
+      ],
+      "bytesConsumed": 32
+    },
+    {
+      "name": "constant-range",
+      "clientSeed": "bob",
+      "nonce": 0,
+      "min": 7,
+      "max": 7,
+      "count": 4,
+      "draws": [
+        7,
+        7,
+        7,
+        7
+      ],
+      "bytesConsumed": 16
+    },
+    {
+      "name": "full-uint32",
+      "clientSeed": "bob",
+      "nonce": 1,
+      "min": 0,
+      "max": 4294967295,
+      "count": 4,
+      "draws": [
+        2576831563,
+        3091569372,
+        4009648927,
+        3470417155
+      ],
+      "bytesConsumed": 16
+    },
+    {
+      "name": "byte-range",
+      "clientSeed": "carol",
+      "nonce": 0,
+      "min": 0,
+      "max": 255,
+      "count": 16,
+      "draws": [
+        178,
+        193,
+        170,
+        126,
+        52,
+        234,
+        76,
+        171,
+        133,
+        59,
+        117,
+        103,
+        170,
+        37,
+        227,
+        110
+      ],
+      "bytesConsumed": 64
+    },
+    {
+      "name": "rejection-path",
+      "clientSeed": "reject",
+      "nonce": 0,
+      "min": 0,
+      "max": 2147483648,
+      "count": 16,
+      "draws": [
+        1258490919,
+        1224419445,
+        1568212904,
+        1685949173,
+        2092131123,
+        1644105494,
+        1932393280,
+        889131659,
+        35452373,
+        253708413,
+        500628996,
+        444064614,
+        332535567,
+        1497719597,
+        541549681,
+        1553275359
+      ],
+      "bytesConsumed": 172
+    },
+    {
+      "name": "offset-range",
+      "clientSeed": "carol",
+      "nonce": 2,
+      "min": 100,
+      "max": 151,
+      "count": 8,
+      "draws": [
+        107,
+        100,
+        110,
+        104,
+        125,
+        125,
+        123,
+        144
+      ],
+      "bytesConsumed": 32
+    }
+  ]
+}

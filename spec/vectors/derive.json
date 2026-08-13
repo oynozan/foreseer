@@ -1,0 +1,62 @@
+{
+  "spec": "FORESEER-SPEC v0.1 section 2",
+  "serverSeed": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "cases": [
+    {
+      "clientSeed": "alice",
+      "nonce": 0,
+      "hmacMessages": [
+        "alice:0:0",
+        "alice:0:1",
+        "alice:0:2"
+      ],
+      "blocks": [
+        "0x1a23092d344123b75fc0fc9f3c8c380eff9feba8d2638125948782bac026065c",
+        "0x1cb727722da57c2e18af44fac0c35195a587a25071676e04434f2142eab4f618",
+        "0x0bdee58efc4a6336566402f2872f764f368a7a701622e11ea9f62805dd350d32"
+      ]
+    },
+    {
+      "clientSeed": "alice",
+      "nonce": 1,
+      "hmacMessages": [
+        "alice:1:0",
+        "alice:1:1",
+        "alice:1:2"
+      ],
+      "blocks": [
+        "0xe9e8c43c8f5003f92bf11ce95ea241513ac5484eccc8e5d96eaea3b75d4a153b",
+        "0xa3ce36f1be08052f6b0c1e8f714c60b0efe7e14571f6dd68f5f47be5311fc87e",
+        "0xdc1a2ab74fa483784b67d9fa2f4e8688b4ff50f77a1244362425c1d554f8f07c"
+      ]
+    },
+    {
+      "clientSeed": "bob",
+      "nonce": 7,
+      "hmacMessages": [
+        "bob:7:0",
+        "bob:7:1",
+        "bob:7:2"
+      ],
+      "blocks": [
+        "0x4d3eb3e3420573bdef3568e7db8faa0757bc341d6a704baf855177c4c3d4ff8a",
+        "0x3f3fe4cbdc2419c9f99cc5173ffce9b4df39566201a36a29f7bfe0e795c2ea2d",
+        "0xafb87a5476e5e6d4576fcd89eab154afb839a4d75010b365a74f28c82088c96a"
+      ]
+    },
+    {
+      "clientSeed": "Zz9_-",
+      "nonce": 123456789,
+      "hmacMessages": [
+        "Zz9_-:123456789:0",
+        "Zz9_-:123456789:1",
+        "Zz9_-:123456789:2"
+      ],
+      "blocks": [
+        "0x45d82df286f8554d5e16a5a6d45de8b1e8f8ce2d15f1aa16dc678067e4592009",
+        "0x5d5884db711169749bc068542470d041d08a13614e373c54977be32a47b71256",
+        "0xd4edeecd22db4f3807941151a788ae79779a8c0582713f07a9378e7853a8f749"
+      ]
+    }
+  ]
+}

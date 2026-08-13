@@ -1,0 +1,385 @@
+{
+  "spec": "FORESEER-SPEC v0.1 end to end",
+  "domain": {
+    "name": "Foreseer",
+    "version": "0",
+    "chainId": 114
+  },
+  "privateKey": "0x0000000000000000000000000000000000000000000000000000000000000001",
+  "teeId": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+  "epochId": 1,
+  "serverSeed": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+  "rules": [
+    {
+      "name": "dice-over-5000",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9999,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5000
+          }
+        },
+        "payout_bp": 19803
+      }
+    },
+    {
+      "name": "coinflip",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 1,
+          "count": 1
+        },
+        "win": {
+          "op": "==",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 1
+          }
+        },
+        "payout_bp": 19800
+      }
+    },
+    {
+      "name": "pair-rank-3-draws",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 51,
+          "count": 3
+        },
+        "win": {
+          "op": "or",
+          "args": [
+            {
+              "op": "==",
+              "l": {
+                "op": "mod",
+                "l": {
+                  "r": 0
+                },
+                "r": {
+                  "c": 13
+                }
+              },
+              "r": {
+                "op": "mod",
+                "l": {
+                  "r": 1
+                },
+                "r": {
+                  "c": 13
+                }
+              }
+            },
+            {
+              "op": "==",
+              "l": {
+                "op": "mod",
+                "l": {
+                  "r": 1
+                },
+                "r": {
+                  "c": 13
+                }
+              },
+              "r": {
+                "op": "mod",
+                "l": {
+                  "r": 2
+                },
+                "r": {
+                  "c": 13
+                }
+              }
+            }
+          ]
+        },
+        "payout_bp": 47000
+      }
+    }
+  ],
+  "receipts": [
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 0,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 0,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          3725
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000000
+      },
+      "digest": "0x31e44b718b9091453582d848cd3a60f3a3dc980a740776bc727bae4655558a4a",
+      "signature": "0x040650963bbdc90b8ab031ca1c3c029c1fa7ae60138fbf06b65631a2155370aa0d92f1961f67878ed41e469d20306092c95587ff7045d26c032ae3915f6dae6c1c"
+    },
+    {
+      "ruleName": "coinflip",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 1,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "bob",
+        "nonce": 0,
+        "ruleHash": "0x39a389be93ce464ef161749ac9eb27bb013d1ad39e8dbb8d34d3daa24c3c2238",
+        "draws": [
+          1
+        ],
+        "win": true,
+        "payoutBp": 19800,
+        "timestamp": 1755000001
+      },
+      "digest": "0x33b89a3fcc8d413a675f2f7f6b7ec658bc44d8b5783238edbeb1ba9dca90e78a",
+      "signature": "0x80881bbcffe4086bf2fef8c7f14df0aadf2868d89830315e32541434023f4a073457fcdd53639f169ae53ff15c79d8d21d33154697fff576a589f3f7682f89031b"
+    },
+    {
+      "ruleName": "pair-rank-3-draws",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 2,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 1,
+        "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841",
+        "draws": [
+          36,
+          9,
+          29
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000002
+      },
+      "digest": "0xa127b2554c9a36bee44e4ac5764d54a5744b08718e0011bd6837bc6a6ef077c4",
+      "signature": "0xb87b1d7aebf58a8b5c96ebcfb0509c425760535affa727d8582297e143bbb2c16cd825493bed4995db223ecd3b6823ba48b74a9f9a6c715e0ca210e0a77fac8e1b"
+    },
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 3,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "carol",
+        "nonce": 0,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          1554
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000003
+      },
+      "digest": "0x38667dd552730940f2488f0b549c2e401698bae0144bcd2760f595f6d1dcb725",
+      "signature": "0x4b074c98d8069187afc576ff58d3506ee4f19017c96b1dc51308c077732ff0be1faa6190026bf8f83009274b6150c0f13ba82deadaf7a4d7811cd298cd79b1391c"
+    },
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 4,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "bob",
+        "nonce": 1,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          1563
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000004
+      },
+      "digest": "0x0d768217f57cf49c7741cf6ffbfd23b700723dee25b1b7e3bb3461f9dff0afec",
+      "signature": "0xd4c0b4fcf45aab3b42aebcd5ada48f7bee05d1e01b45d7cf65b5cdd65b5a06ce023ef6fb6824edb9d6e4fbfd6d0415b55e1f0e4bfc7ef9c72b2ff69c1e971aed1c"
+    },
+    {
+      "ruleName": "coinflip",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 5,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 2,
+        "ruleHash": "0x39a389be93ce464ef161749ac9eb27bb013d1ad39e8dbb8d34d3daa24c3c2238",
+        "draws": [
+          1
+        ],
+        "win": true,
+        "payoutBp": 19800,
+        "timestamp": 1755000005
+      },
+      "digest": "0x514d33f7d76508487ab57887e580ad0ed50b465ee71db1f811133cd1ba5b8d7a",
+      "signature": "0xd8425f9ac9ef12ba15639e070baa3ceb37647a99ea68cca53cd67d51ad5409415dce63b69eb5d9433e5aadb1d88280466f8ee76849d159bf830db94272eefae81c"
+    },
+    {
+      "ruleName": "pair-rank-3-draws",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 6,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "carol",
+        "nonce": 1,
+        "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841",
+        "draws": [
+          18,
+          8,
+          3
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000006
+      },
+      "digest": "0x0594cb9cea4b8625103b1fdae21d65cba799bad40040dc6c60b35359ef654d05",
+      "signature": "0x00abc3f22dbe4f5806c84181155cb53e0a368753799a11d086e2c54eb09be414060ead7a4a25a327001b0c8cc3bf44c75e77198f64c55db83c63b1fc91b3ac811b"
+    },
+    {
+      "ruleName": "pair-rank-3-draws",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 7,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "bob",
+        "nonce": 2,
+        "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841",
+        "draws": [
+          0,
+          28,
+          45
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000007
+      },
+      "digest": "0x146928a71748ed0a187addbb0a295a82aa3a33033dcceb5fbd0744b0ee19e431",
+      "signature": "0x69deacd43f7be2df4878d84f2c287e2a12f7f77e10ad203f63db123c70f8047b7101ac801b2caf99b39e2002d700178112e8e228981f4b77b43f597d1c03c6391b"
+    },
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 8,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 3,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          4220
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000008
+      },
+      "digest": "0x5fef5b8029eb1c95d03f4e68be770a41c6024cf66e1d5e24f6e8e2d158363ec5",
+      "signature": "0x7ea67c48220899e81e8e330b0a208c9af5f955b28ccb31c4d0d8de640f938ff162050ba4b870b00a34b25184877f91b718c565557067a9ccfa17395ea1a871951c"
+    },
+    {
+      "ruleName": "coinflip",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 9,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "carol",
+        "nonce": 2,
+        "ruleHash": "0x39a389be93ce464ef161749ac9eb27bb013d1ad39e8dbb8d34d3daa24c3c2238",
+        "draws": [
+          1
+        ],
+        "win": true,
+        "payoutBp": 19800,
+        "timestamp": 1755000009
+      },
+      "digest": "0x2e8158cf71861b783cdfa7525344149663c6d0ef1d98b2b77ba8dbc81b5fdc4b",
+      "signature": "0xc0c62e838a593e70181bc189cfa36b7031aa4bf56500b5a509b2817d0a22efbf77585554e8039abe6ecb05a9d1010fbd483e31c57421dd920190215cbeb2ac361b"
+    },
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 10,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "bob",
+        "nonce": 3,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          6996
+        ],
+        "win": true,
+        "payoutBp": 19803,
+        "timestamp": 1755000010
+      },
+      "digest": "0xea1cab4ea79bd3665598c017ebdfc04892d07c89e60373734e54f84f9ab6b5c5",
+      "signature": "0xa5b4033b36257ea5438168448eb6aee284f3b6f5b178a72b3ba0b3aa6ce80ea7579789f66ce8eb01fd204328ef7013ca164a3bd21ef4051daf97b26dcf09e62d1b"
+    },
+    {
+      "ruleName": "pair-rank-3-draws",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 11,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 4,
+        "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841",
+        "draws": [
+          5,
+          16,
+          16
+        ],
+        "win": true,
+        "payoutBp": 47000,
+        "timestamp": 1755000011
+      },
+      "digest": "0xbb6d5e81b072c9bac53784d81a9a8c812524f29bd9bb0f4c460665ccd8e082ab",
+      "signature": "0xefe0421924c98194b60280154981243913d536b321af9467723de6597e968b50283071c49cb2db50fd7ab578400ea84a208e1bc45802bb22b70197636e480a511c"
+    }
+  ],
+  "merkleRoot": "0x6c4fd3095720b35bba7b5379fa23f575fc82b81edb2e8e4e1fabb3ec296b4c5e",
+  "receiptCount": 12,
+  "closeDigest": "0xfff3334f38b28453ee004ef937aee2a027467991e1061d5031df1e6d1e061777",
+  "closeSignature": "0x357997c8407631114659a390996e355a5da6dd6742c60d101233f1aa11dcd201219812f3e07a1b1b32beff76b548c1b05e2e590e541ebfccec076e6bc6e18f6e1b"
+}

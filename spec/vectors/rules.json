@@ -1,0 +1,544 @@
+{
+  "spec": "FORESEER-SPEC v0.1 section 4",
+  "valid": [
+    {
+      "name": "dice-over-5000",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9999,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5000
+          }
+        },
+        "payout_bp": 19803
+      },
+      "canonical": "{\"payout_bp\":19803,\"random\":{\"count\":1,\"max\":9999,\"min\":0,\"type\":\"int\"},\"v\":0,\"win\":{\"l\":{\"r\":0},\"op\":\">\",\"r\":{\"c\":5000}}}",
+      "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87"
+    },
+    {
+      "name": "dice-under-1200",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9999,
+          "count": 1
+        },
+        "win": {
+          "op": "<",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 1200
+          }
+        },
+        "payout_bp": 82500
+      },
+      "canonical": "{\"payout_bp\":82500,\"random\":{\"count\":1,\"max\":9999,\"min\":0,\"type\":\"int\"},\"v\":0,\"win\":{\"l\":{\"r\":0},\"op\":\"<\",\"r\":{\"c\":1200}}}",
+      "ruleHash": "0xcc76bfa90b9a849deef947b897c231ba6cc6f2b396baa0b2635b14e6f1ffcfae"
+    },
+    {
+      "name": "coinflip",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 1,
+          "count": 1
+        },
+        "win": {
+          "op": "==",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 1
+          }
+        },
+        "payout_bp": 19800
+      },
+      "canonical": "{\"payout_bp\":19800,\"random\":{\"count\":1,\"max\":1,\"min\":0,\"type\":\"int\"},\"v\":0,\"win\":{\"l\":{\"r\":0},\"op\":\"==\",\"r\":{\"c\":1}}}",
+      "ruleHash": "0x39a389be93ce464ef161749ac9eb27bb013d1ad39e8dbb8d34d3daa24c3c2238"
+    },
+    {
+      "name": "pair-rank-3-draws",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 51,
+          "count": 3
+        },
+        "win": {
+          "op": "or",
+          "args": [
+            {
+              "op": "==",
+              "l": {
+                "op": "mod",
+                "l": {
+                  "r": 0
+                },
+                "r": {
+                  "c": 13
+                }
+              },
+              "r": {
+                "op": "mod",
+                "l": {
+                  "r": 1
+                },
+                "r": {
+                  "c": 13
+                }
+              }
+            },
+            {
+              "op": "==",
+              "l": {
+                "op": "mod",
+                "l": {
+                  "r": 1
+                },
+                "r": {
+                  "c": 13
+                }
+              },
+              "r": {
+                "op": "mod",
+                "l": {
+                  "r": 2
+                },
+                "r": {
+                  "c": 13
+                }
+              }
+            }
+          ]
+        },
+        "payout_bp": 47000
+      },
+      "canonical": "{\"payout_bp\":47000,\"random\":{\"count\":3,\"max\":51,\"min\":0,\"type\":\"int\"},\"v\":0,\"win\":{\"args\":[{\"l\":{\"l\":{\"r\":0},\"op\":\"mod\",\"r\":{\"c\":13}},\"op\":\"==\",\"r\":{\"l\":{\"r\":1},\"op\":\"mod\",\"r\":{\"c\":13}}},{\"l\":{\"l\":{\"r\":1},\"op\":\"mod\",\"r\":{\"c\":13}},\"op\":\"==\",\"r\":{\"l\":{\"r\":2},\"op\":\"mod\",\"r\":{\"c\":13}}}],\"op\":\"or\"}}",
+      "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841"
+    },
+    {
+      "name": "nested-logic",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9999,
+          "count": 2
+        },
+        "win": {
+          "op": "and",
+          "args": [
+            {
+              "op": ">=",
+              "l": {
+                "r": 0
+              },
+              "r": {
+                "c": 100
+              }
+            },
+            {
+              "op": "not",
+              "arg": {
+                "op": "or",
+                "args": [
+                  {
+                    "op": "==",
+                    "l": {
+                      "r": 1
+                    },
+                    "r": {
+                      "c": 0
+                    }
+                  },
+                  {
+                    "op": "==",
+                    "l": {
+                      "r": 1
+                    },
+                    "r": {
+                      "c": 9999
+                    }
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "payout_bp": 10500
+      },
+      "canonical": "{\"payout_bp\":10500,\"random\":{\"count\":2,\"max\":9999,\"min\":0,\"type\":\"int\"},\"v\":0,\"win\":{\"args\":[{\"l\":{\"r\":0},\"op\":\">=\",\"r\":{\"c\":100}},{\"arg\":{\"args\":[{\"l\":{\"r\":1},\"op\":\"==\",\"r\":{\"c\":0}},{\"l\":{\"r\":1},\"op\":\"==\",\"r\":{\"c\":9999}}],\"op\":\"or\"},\"op\":\"not\"}],\"op\":\"and\"}}",
+      "ruleHash": "0xeb8d4a1ff00dbb530221bdf05cc946795d6ef31eacd3906b5ddc043dc319832a"
+    }
+  ],
+  "invalid": [
+    {
+      "name": "wrong-version",
+      "rule": {
+        "v": 1,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "v must be 0"
+    },
+    {
+      "name": "extra-key",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100,
+        "note": "x"
+      },
+      "reason": "unknown top-level key"
+    },
+    {
+      "name": "min-above-max",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 10,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "min > max"
+    },
+    {
+      "name": "count-zero",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 0
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "c": 1
+          },
+          "r": {
+            "c": 0
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "count outside 1..16"
+    },
+    {
+      "name": "count-17",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 17
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "count outside 1..16"
+    },
+    {
+      "name": "float-max",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9.5,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "float where integer required"
+    },
+    {
+      "name": "draw-index-out-of-range",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 1
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "r index >= count"
+    },
+    {
+      "name": "negative-constant",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": -1
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "constant out of uint32 range"
+    },
+    {
+      "name": "unknown-op",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": "xor",
+          "args": [
+            {
+              "op": ">",
+              "l": {
+                "r": 0
+              },
+              "r": {
+                "c": 5
+              }
+            },
+            {
+              "op": "<",
+              "l": {
+                "r": 0
+              },
+              "r": {
+                "c": 5
+              }
+            }
+          ]
+        },
+        "payout_bp": 100
+      },
+      "reason": "unknown op"
+    },
+    {
+      "name": "mod-by-zero",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": "==",
+          "l": {
+            "op": "mod",
+            "l": {
+              "r": 0
+            },
+            "r": {
+              "c": 0
+            }
+          },
+          "r": {
+            "c": 0
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "mod divisor must be >= 1"
+    },
+    {
+      "name": "mod-by-draw",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 2
+        },
+        "win": {
+          "op": "==",
+          "l": {
+            "op": "mod",
+            "l": {
+              "r": 0
+            },
+            "r": {
+              "r": 1
+            }
+          },
+          "r": {
+            "c": 0
+          }
+        },
+        "payout_bp": 100
+      },
+      "reason": "mod divisor must be a constant"
+    },
+    {
+      "name": "and-single-arg",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": "and",
+          "args": [
+            {
+              "op": ">",
+              "l": {
+                "r": 0
+              },
+              "r": {
+                "c": 5
+              }
+            }
+          ]
+        },
+        "payout_bp": 100
+      },
+      "reason": "and needs >= 2 args"
+    },
+    {
+      "name": "operand-as-win",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "r": 0
+        },
+        "payout_bp": 100
+      },
+      "reason": "win must be a bool expression"
+    },
+    {
+      "name": "null-payout",
+      "rule": {
+        "v": 0,
+        "random": {
+          "type": "int",
+          "min": 0,
+          "max": 9,
+          "count": 1
+        },
+        "win": {
+          "op": ">",
+          "l": {
+            "r": 0
+          },
+          "r": {
+            "c": 5
+          }
+        },
+        "payout_bp": null
+      },
+      "reason": "null where integer required"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "spec": "FORESEER-SPEC v0.1 section 5",
+  "domain": {
+    "name": "Foreseer",
+    "version": "0",
+    "chainId": 114
+  },
+  "privateKey": "0x0000000000000000000000000000000000000000000000000000000000000001",
+  "serverSeed": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "receipts": [
+    {
+      "ruleName": "dice-over-5000",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 0,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 0,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [
+          3725
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000000
+      },
+      "structHash": "0x5cb9e86cac985941d76bc8801f62066c3b0c427c36982a86e786ce4979033da7",
+      "digest": "0x31e44b718b9091453582d848cd3a60f3a3dc980a740776bc727bae4655558a4a",
+      "signature": "0x040650963bbdc90b8ab031ca1c3c029c1fa7ae60138fbf06b65631a2155370aa0d92f1961f67878ed41e469d20306092c95587ff7045d26c032ae3915f6dae6c1c",
+      "recoveredAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
+    },
+    {
+      "ruleName": "coinflip",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 1,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 1,
+        "ruleHash": "0x39a389be93ce464ef161749ac9eb27bb013d1ad39e8dbb8d34d3daa24c3c2238",
+        "draws": [
+          0
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000001
+      },
+      "structHash": "0xa53d0ee381d1d806fec955b6e67dbcc5b6cfd92b3b8ce488f3ef4b47e713b4ef",
+      "digest": "0xa051c6848d4f1f82361a48fe35e03a36faabc0f74c84b9adac49f935d7f30917",
+      "signature": "0x125744147d4a0e078b341d01896462404d6941ba8b2ee28bd6b281f06a10f0450210d92339083fec49f7c0c4d38f6fcada5eaecf4013aebfc9143eff9d4795771b",
+      "recoveredAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
+    },
+    {
+      "ruleName": "pair-rank-3-draws",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 2,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "bob",
+        "nonce": 0,
+        "ruleHash": "0x7a6205da548e9f98405fa2a966f60e1b9cefc71dfbeb921e382737ee9708c841",
+        "draws": [
+          29,
+          50,
+          30
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000002
+      },
+      "structHash": "0xa3b2b694ce9c8c61644e71eb68389cae77afce292511be0910f09416d2514a3f",
+      "digest": "0xf4de664827978245d41ad3d92f866fb998d30003c74e94122ce62e68fc241140",
+      "signature": "0x044eeb23d9861b7ec4607e55fd4616693ffa65826f6631d4fed8c7e98905fe0b06c7a29ec316d7ddd2bafa6b45e4e00a98e61ebcc011d446a2f9828bed0e83481b",
+      "recoveredAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
+    },
+    {
+      "ruleName": "dice-under-1200",
+      "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 3,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "Zz9_-",
+        "nonce": 0,
+        "ruleHash": "0xcc76bfa90b9a849deef947b897c231ba6cc6f2b396baa0b2635b14e6f1ffcfae",
+        "draws": [
+          1644
+        ],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000003
+      },
+      "structHash": "0xbb0d0e5339beae1627ffb84e16c372d7771c7e6bb17ab49fb348a1ebd3720925",
+      "digest": "0x91c78d4af18b039d523a8497513099ec1a177425b7445f1760919d0abdba9662",
+      "signature": "0xb69e7616aa29788235ae6458e6261a8ff38d626edea363e25ece2ee5d6a3857b107e88a6538ca556d99e7e320a4e8817bd2acf346ee820c42fb0b6959d7a1e9f1c",
+      "recoveredAddress": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf"
+    }
+  ]
+}
