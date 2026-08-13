@@ -15,6 +15,9 @@
     "13-get-action-not-allowed",
     "14-post-state-not-allowed",
     "15-unknown-path",
-    "16-get-state"
+    "16-get-state",
+    "17-foreseer-play-without-epoch",
+    "18-foreseer-close-without-epoch",
+    "19-foreseer-unknown-command"
   ]
 }

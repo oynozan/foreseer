@@ -248,9 +248,46 @@ FIXTURES: list[dict] = [
                     "lastGreeting": "Hello, Second! Welcome to Flare Confidential Compute.",
                     "farewellCount": 2,
                     "lastFarewell": "Goodbye, W! Reason: ",
+                    "foreseerTeeId": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+                    "foreseerEpochId": 0,
+                    "foreseerEpochOpen": False,
+                    "foreseerSeedCommit": "0x" + "00" * 32,
+                    "foreseerBets": 0,
                 },
             },
         },
+    },
+    {
+        "name": "17-foreseer-play-without-epoch",
+        "description": "FORESEER PLAY before OPEN_EPOCH is a status-0 result",
+        "request": {"method": "POST", "path": "/action",
+                    "body": action("FORESEER", "PLAY", json_msg({
+                        "clientSeed": "alice",
+                        "rule": {"v": 0, "random": {"type": "int", "min": 0, "max": 9999, "count": 1},
+                                 "win": {"op": ">", "l": {"r": 0}, "r": {"c": 4999}}, "payout_bp": 19800}}))},
+        "expect": {
+            "status": 200,
+            "json_subset": {"status": 0, "data": "0x"},
+            "log_prefix": "error: no open epoch",
+        },
+    },
+    {
+        "name": "18-foreseer-close-without-epoch",
+        "description": "FORESEER CLOSE_EPOCH with no open epoch is a status-0 result",
+        "request": {"method": "POST", "path": "/action",
+                    "body": action("FORESEER", "CLOSE_EPOCH", json_msg({}))},
+        "expect": {
+            "status": 200,
+            "json_subset": {"status": 0, "data": "0x"},
+            "log_prefix": "error: no open epoch",
+        },
+    },
+    {
+        "name": "19-foreseer-unknown-command",
+        "description": "FORESEER with an unrouted opCommand is 501",
+        "request": {"method": "POST", "path": "/action",
+                    "body": action("FORESEER", "NOT_A_COMMAND", json_msg({}))},
+        "expect": {"status": 501},
     },
 ]
 
@@ -259,10 +296,10 @@ def main() -> None:
     index = []
     for f in FIXTURES:
         path = HERE / f"{f['name']}.json"
-        path.write_text(json.dumps(f, indent=2) + "\n")
+        path.write_text(json.dumps(f, indent=2) + "\n", newline="\n")
         index.append(f["name"])
 
-    (HERE / "index.json").write_text(json.dumps({"fixtures": index}, indent=2) + "\n")
+    (HERE / "index.json").write_text(json.dumps({"fixtures": index}, indent=2) + "\n", newline="\n")
     print(f"wrote {len(index)} fixtures + index.json to {HERE}")
 
 

@@ -13,7 +13,12 @@
         "greetingCount": 2,
         "lastGreeting": "Hello, Second! Welcome to Flare Confidential Compute.",
         "farewellCount": 2,
-        "lastFarewell": "Goodbye, W! Reason: "
+        "lastFarewell": "Goodbye, W! Reason: ",
+        "foreseerTeeId": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+        "foreseerEpochId": 0,
+        "foreseerEpochOpen": false,
+        "foreseerSeedCommit": "0x0000000000000000000000000000000000000000000000000000000000000000",
+        "foreseerBets": 0
       }
     }
   }
