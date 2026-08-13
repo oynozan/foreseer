@@ -3,14 +3,14 @@
 Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TODO.md),
 [server/TODO.md](server/TODO.md), [tee/TODO.md](tee/TODO.md).
 
-## Phase 1: spec, TypeScript reference, golden vectors (this session)
+## Phase 1: spec, TypeScript reference, golden vectors (done)
 
-- [ ] Write FORESEER-SPEC v0.1 in spec/SPEC.md
-- [ ] Implement foreseer.ts core: derive, rules, receipt, commit, merkle, verify
-- [ ] Implement ReferenceTee and presets (dice, coinflip)
-- [ ] Generate golden vectors into spec/vectors/ and sync to packages/ts/test/vectors/
-- [ ] Golden tests, property and edge tests, full e2e epoch test all green
-- [ ] Register packages/ts as a git submodule of the root
+- [x] Write FORESEER-SPEC v0.1 in spec/SPEC.md
+- [x] Implement foreseer.ts core: derive, rules, receipt, commit, merkle, verify
+- [x] Implement ReferenceTee and presets (dice, coinflip)
+- [x] Generate golden vectors into spec/vectors/ and sync to packages/ts/test/vectors/
+- [x] Golden tests, property and edge tests, full e2e epoch test all green
+- [x] Register packages/ts as a git submodule of the root
 
 ## Phase 2: server orchestration MVP
 

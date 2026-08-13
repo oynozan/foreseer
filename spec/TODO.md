@@ -2,12 +2,12 @@
 
 Roadmap context: [root TODO.md](../TODO.md).
 
-## v0.1 (this session)
+## v0.1 (done this session)
 
-- [ ] SPEC.md sections 1 to 8 written and numbered
-- [ ] Every implemented byte described, no drift from packages/ts
-- [ ] Golden vectors generated into vectors/ (byte-identical on regeneration)
-- [ ] Vector for the rejection-sampling path included in ints.json
+- [x] SPEC.md sections 1 to 8 written and numbered
+- [x] Every implemented byte described, no drift from packages/ts
+- [x] Golden vectors generated into vectors/ (byte-identical on regeneration)
+- [x] Vector for the rejection-sampling path included in ints.json
 
 ## Later
 
