@@ -1,11 +1,12 @@
 import "reflect-metadata";
 import { Module } from "@nestjs/common";
 import type { DynamicModule } from "@nestjs/common";
-import { APP_FILTER } from "@nestjs/core";
+import { APP_FILTER, NestFactory } from "@nestjs/core";
+import type { NestExpressApplication } from "@nestjs/platform-express";
 import type Database from "better-sqlite3";
 import type { Engine } from "./engine";
 import { ApiExceptionFilter } from "./filters";
-import { ADMIN_KEY, DB, ENGINE } from "./tokens";
+import { ADMIN_KEY, DB, ENGINE, PLAY_RATE } from "./tokens";
 import {
     AdminController,
     EpochsController,
@@ -15,10 +16,14 @@ import {
     VerifyController,
 } from "./controllers";
 
+export const BODY_LIMIT_BYTES = 65536;
+
 export interface AppOptions {
     db: Database.Database;
     engine: Engine;
     adminKey: string;
+    playLimit?: number;
+    playWindowSeconds?: number;
 }
 
 @Module({})
@@ -38,8 +43,21 @@ export class AppModule {
                 { provide: DB, useValue: options.db },
                 { provide: ENGINE, useValue: options.engine },
                 { provide: ADMIN_KEY, useValue: options.adminKey },
+                {
+                    provide: PLAY_RATE,
+                    useValue: { limit: options.playLimit ?? 60, windowSeconds: options.playWindowSeconds ?? 10 },
+                },
                 { provide: APP_FILTER, useClass: ApiExceptionFilter },
             ],
         };
     }
+}
+
+export async function createApp(options: AppOptions): Promise<NestExpressApplication> {
+    const app = await NestFactory.create<NestExpressApplication>(AppModule.forRoot(options), {
+        logger: false,
+        bodyParser: false,
+    });
+    app.useBodyParser("json", { limit: BODY_LIMIT_BYTES });
+    return app;
 }

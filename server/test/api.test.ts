@@ -1,13 +1,12 @@
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { NestFactory } from "@nestjs/core";
 import type { INestApplication } from "@nestjs/common";
 import { dice, receiptDigest, recoverSigner, toBytes, verifyCommit, verifyMerkleProof } from "foreseer.ts";
 import { verifyOutcome } from "foreseer.ts/verify";
 import type { Hex, Receipt } from "foreseer.ts";
 import { openDb } from "../src/db";
 import { Engine } from "../src/engine";
-import { AppModule } from "../src/app.module";
+import { createApp } from "../src/app.module";
 
 const ADMIN = "test-admin-key";
 const db = openDb(":memory:");
@@ -44,7 +43,7 @@ async function call(method: string, path: string, body?: unknown, headers: Recor
 }
 
 beforeAll(async () => {
-    app = await NestFactory.create(AppModule.forRoot({ db, engine, adminKey: ADMIN }), { logger: false });
+    app = await createApp({ db, engine, adminKey: ADMIN });
     await app.listen(0);
     const address = (app.getHttpServer() as { address(): AddressInfo | string | null }).address() as AddressInfo;
     base = `http://localhost:${address.port}`;
@@ -161,6 +160,57 @@ describe("api", () => {
         const verdict = await call("GET", `/verify/${epochId}/0`);
         expect(verdict.json.allGreen).toBe(true);
         expect(verdict.json.checks).toEqual({ signature: true, commit: true, outcome: true, merkle: true });
+    });
+
+    it("rejects bodies over 64 KiB with 413", async () => {
+        const res = await call(
+            "POST",
+            "/play",
+            { clientSeed: "alice", ruleHash: "0x00", padding: "x".repeat(70000) },
+            { "x-api-key": apiKey },
+        );
+        expect(res.status).toBe(413);
+        expect(res.json).toEqual({ error: "body too large" });
+    });
+
+    it("paginates receipts with total, limit, offset", async () => {
+        const ruleHashHex = (await call("POST", "/rules", { rule: diceRule }, { "x-api-key": apiKey })).json.ruleHash;
+        for (let i = 0; i < 5; i++) {
+            await call("POST", "/play", { clientSeed: "carol", ruleHash: ruleHashHex }, { "x-api-key": apiKey });
+        }
+        const epochId = (await call("GET", "/epochs/current")).json.epochId as number;
+
+        const first = await call("GET", `/epochs/${epochId}/receipts?clientSeed=carol&limit=2`);
+        expect(first.status).toBe(200);
+        expect(first.json.total).toBe(5);
+        expect(first.json.limit).toBe(2);
+        expect(first.json.offset).toBe(0);
+        expect(first.json.receipts.length).toBe(2);
+        expect(first.json.receipts[0].receipt.nonce).toBe(0);
+
+        const second = await call("GET", `/epochs/${epochId}/receipts?clientSeed=carol&limit=2&offset=2`);
+        expect(second.json.total).toBe(5);
+        expect(second.json.offset).toBe(2);
+        expect(second.json.receipts.length).toBe(2);
+        expect(second.json.receipts[0].receipt.nonce).toBe(2);
+
+        const tail = await call("GET", `/epochs/${epochId}/receipts?clientSeed=carol&limit=2&offset=4`);
+        expect(tail.json.receipts.length).toBe(1);
+
+        const defaults = await call("GET", `/epochs/${epochId}/receipts`);
+        expect(defaults.json.limit).toBe(100);
+        expect(defaults.json.offset).toBe(0);
+        expect(defaults.json.total).toBe(defaults.json.receipts.length);
+    });
+
+    it("rejects invalid pagination params", async () => {
+        const epochId = (await call("GET", "/epochs/current")).json.epochId as number;
+        const badLimit = await call("GET", `/epochs/${epochId}/receipts?limit=0`);
+        expect(badLimit.status).toBe(400);
+        expect(badLimit.json).toEqual({ error: "limit must be 1..1000" });
+        const badOffset = await call("GET", `/epochs/${epochId}/receipts?offset=-1`);
+        expect(badOffset.status).toBe(400);
+        expect(badOffset.json).toEqual({ error: "offset must be >= 0" });
     });
 
     it("unknown routes 404", async () => {

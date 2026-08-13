@@ -14,6 +14,6 @@ Roadmap context: [root TODO.md](../TODO.md).
 
 - [ ] Billing hooks (usage metering per operator, Phase 6)
 - [ ] Swap simulated seed handling for the Go TEE (Phase 3): server relays instead of signing
-- [ ] Cache Merkle trees of hot closed epochs (proofFor rebuilds per call)
-- [ ] Pagination on receipt listings
-- [ ] Rate limiting on /play
+- [x] Cache Merkle trees of hot closed epochs (LRU of 8 in Engine.proofFor)
+- [x] Pagination on receipt listings (limit/offset with total on GET /epochs/:id/receipts)
+- [x] Rate limiting on /play (fixed window per operator, env-configurable)

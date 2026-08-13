@@ -4,7 +4,7 @@ import { createHash, timingSafeEqual } from "node:crypto";
 import type Database from "better-sqlite3";
 import { ApiError } from "./engine";
 import type { OperatorRow } from "./db";
-import { ADMIN_KEY, DB } from "./tokens";
+import { ADMIN_KEY, DB, PLAY_RATE } from "./tokens";
 
 export interface ApiRequest {
     headers: Record<string, string | string[] | undefined>;
@@ -26,6 +26,33 @@ export class AdminGuard implements CanActivate {
             .update(typeof given === "string" ? given : "", "utf8")
             .digest();
         if (!timingSafeEqual(digest, this.adminDigest)) throw new ApiError(401, "admin key required");
+        return true;
+    }
+}
+
+export interface PlayRateOptions {
+    limit: number;
+    windowSeconds: number;
+}
+
+// Fixed window counter per operator, in memory
+@Injectable()
+export class PlayRateGuard implements CanActivate {
+    private readonly windows = new Map<number, { window: number; count: number }>();
+
+    constructor(@Inject(PLAY_RATE) private readonly rate: PlayRateOptions) {}
+
+    canActivate(context: ExecutionContext): boolean {
+        const req = context.switchToHttp().getRequest<ApiRequest>();
+        const id = req.operator!.id;
+        const window = Math.floor(Date.now() / (this.rate.windowSeconds * 1000));
+        const entry = this.windows.get(id);
+        if (entry === undefined || entry.window !== window) {
+            this.windows.set(id, { window, count: 1 });
+            return true;
+        }
+        if (entry.count >= this.rate.limit) throw new ApiError(429, "rate limit exceeded, retry later");
+        entry.count += 1;
         return true;
     }
 }

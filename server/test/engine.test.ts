@@ -118,6 +118,22 @@ describe("engine", () => {
         expect(() => engine.proofFor(opened.epoch_id, 5)).toThrow("unknown betId");
     });
 
+    it("serves repeat proofs from the Merkle cache", () => {
+        const db = openDb(":memory:");
+        const engine = new Engine({ db });
+        const opened = engine.ensureEpoch();
+        for (let i = 0; i < 4; i++) engine.play({ operatorId: 1, clientSeed: "alice", rule: diceRule });
+        engine.closeOpen();
+        expect(engine.merkleCacheHits).toBe(0);
+        const first = engine.proofFor(opened.epoch_id, 2);
+        expect(engine.merkleCacheHits).toBe(0);
+        const second = engine.proofFor(opened.epoch_id, 2);
+        expect(engine.merkleCacheHits).toBe(1);
+        expect(second).toEqual(first);
+        expect(engine.proofFor(opened.epoch_id, 0)).toEqual(engine.proofFor(opened.epoch_id, 0));
+        expect(engine.merkleCacheHits).toBe(3);
+    });
+
     it("uses a fresh random seed per epoch", () => {
         const db = openDb(":memory:");
         const engine = new Engine({ db, epochSeconds: 60 });

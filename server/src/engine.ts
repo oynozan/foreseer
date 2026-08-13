@@ -56,9 +56,11 @@ export class Engine {
     readonly domain: Eip712Domain;
     readonly teeId: Hex;
     readonly epochSeconds: number;
+    merkleCacheHits = 0;
     private readonly db: Database.Database;
     private readonly key: Uint8Array;
     private readonly now: () => number;
+    private readonly merkleCache = new Map<number, { tree: MerkleTree; digests: Uint8Array[] }>();
 
     constructor(options: EngineOptions) {
         this.db = options.db;
@@ -161,6 +163,23 @@ export class Engine {
             .all(epochId) as unknown as ReceiptRow[];
     }
 
+    receiptPage(
+        epochId: number,
+        clientSeed: string | undefined,
+        limit: number,
+        offset: number,
+    ): { rows: ReceiptRow[]; total: number } {
+        const where = clientSeed === undefined ? "epoch_id = ?" : "epoch_id = ? AND client_seed = ?";
+        const args = clientSeed === undefined ? [epochId] : [epochId, clientSeed];
+        const total = (
+            this.db.prepare(`SELECT COUNT(*) AS c FROM receipts WHERE ${where}`).get(...args) as { c: number }
+        ).c;
+        const rows = this.db
+            .prepare(`SELECT * FROM receipts WHERE ${where} ORDER BY bet_id LIMIT ? OFFSET ?`)
+            .all(...args, limit, offset) as unknown as ReceiptRow[];
+        return { rows, total };
+    }
+
     closeOpen(): { epochId: number; merkleRoot: Hex; receiptCount: number; closeSignature: Hex } | null {
         const epoch = this.openEpochRow();
         if (epoch === undefined) return null;
@@ -194,15 +213,29 @@ export class Engine {
         return { closed, open: this.ensureEpoch().epoch_id };
     }
 
-    // ponytail: rebuilds the tree per call, cache per epoch if hot
+    // LRU cap 8, closed epochs never change
+    private cachedTree(epoch: EpochRow): { tree: MerkleTree; digests: Uint8Array[] } {
+        const hit = this.merkleCache.get(epoch.epoch_id);
+        if (hit !== undefined) {
+            this.merkleCacheHits += 1;
+            this.merkleCache.delete(epoch.epoch_id);
+            this.merkleCache.set(epoch.epoch_id, hit);
+            return hit;
+        }
+        const rows = this.receiptRows(epoch.epoch_id);
+        const digests = rows.map((row) => receiptDigest(rowToReceipt(row, epoch.seed_commit as Hex), this.domain));
+        const entry = { tree: new MerkleTree(digests), digests };
+        this.merkleCache.set(epoch.epoch_id, entry);
+        if (this.merkleCache.size > 8) this.merkleCache.delete(this.merkleCache.keys().next().value!);
+        return entry;
+    }
+
     proofFor(epochId: number, betId: number): { digest: Hex; proof: Hex[]; merkleRoot: Hex } {
         const epoch = this.epochRow(epochId);
         if (epoch === undefined) throw new ApiError(404, "unknown epoch");
         if (epoch.closed_at === null) throw new ApiError(409, "epoch still open, proofs exist after close");
-        const rows = this.receiptRows(epochId);
-        if (betId < 0 || betId >= rows.length) throw new ApiError(404, "unknown betId");
-        const digests = rows.map((row) => receiptDigest(rowToReceipt(row, epoch.seed_commit as Hex), this.domain));
-        const tree = new MerkleTree(digests);
+        const { tree, digests } = this.cachedTree(epoch);
+        if (betId < 0 || betId >= digests.length) throw new ApiError(404, "unknown betId");
         return {
             digest: toHex(digests[betId]!),
             proof: tree.proof(betId).map(toHex),

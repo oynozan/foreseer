@@ -1,10 +1,9 @@
 import "reflect-metadata";
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
-import { NestFactory } from "@nestjs/core";
 import { openDb } from "./db";
 import { Engine } from "./engine";
-import { AppModule } from "./app.module";
+import { createApp } from "./app.module";
 import type { Hex } from "foreseer.ts";
 
 async function bootstrap(): Promise<void> {
@@ -13,6 +12,8 @@ async function bootstrap(): Promise<void> {
     const epochSeconds = Number(process.env.FORESEER_EPOCH_SECONDS ?? 300);
     const adminKey = process.env.FORESEER_ADMIN_KEY ?? "dev-admin-key";
     const privateKey = process.env.FORESEER_TEE_KEY as Hex | undefined;
+    const playLimit = Number(process.env.FORESEER_PLAY_LIMIT ?? 60);
+    const playWindowSeconds = Number(process.env.FORESEER_PLAY_WINDOW_SECONDS ?? 10);
 
     if (adminKey === "dev-admin-key") {
         console.warn("WARNING: using the default admin key, set FORESEER_ADMIN_KEY");
@@ -32,7 +33,7 @@ async function bootstrap(): Promise<void> {
         if (t.closed !== null) console.log(`epoch ${t.closed} closed, epoch ${t.open} open`);
     }, 5000);
 
-    const app = await NestFactory.create(AppModule.forRoot({ db, engine, adminKey }), { logger: false });
+    const app = await createApp({ db, engine, adminKey, playLimit, playWindowSeconds });
     await app.listen(port);
     console.log(`foreseer-server on http://localhost:${port} teeId=${engine.teeId} epoch=${epochSeconds}s`);
 

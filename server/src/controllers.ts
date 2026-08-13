@@ -15,7 +15,7 @@ import type { Hex, Receipt, Rule } from "foreseer.ts";
 import { ApiError, rowToReceipt } from "./engine";
 import type { Engine } from "./engine";
 import type { EpochRow, OperatorRow, RuleRow } from "./db";
-import { AdminGuard, OperatorGuard } from "./guards";
+import { AdminGuard, OperatorGuard, PlayRateGuard } from "./guards";
 import type { ApiRequest } from "./guards";
 import { DB, ENGINE } from "./tokens";
 
@@ -24,6 +24,13 @@ const HASH = /^0x[0-9a-f]{64}$/;
 function intParam(value: string): number {
     if (!/^\d+$/.test(value)) throw new ApiError(404, "no such route");
     return Number(value);
+}
+
+function intQuery(value: unknown, fallback: number, min: number, max: number, message: string): number {
+    if (value === undefined) return fallback;
+    const n = typeof value === "string" && /^-?\d+$/.test(value) ? Number(value) : NaN;
+    if (!Number.isSafeInteger(n) || n < min || n > max) throw new ApiError(400, message);
+    return n;
 }
 
 function receiptJson(receipt: Receipt, signature: string) {
@@ -144,7 +151,7 @@ export class PlayController {
     ) {}
 
     @Post()
-    @UseGuards(OperatorGuard)
+    @UseGuards(OperatorGuard, PlayRateGuard)
     play(@Req() req: ApiRequest, @Body() body: unknown) {
         const b = body as { clientSeed?: unknown; ruleHash?: unknown; nonce?: unknown };
         if (typeof b?.clientSeed !== "string") throw new ApiError(400, "clientSeed required");
@@ -188,15 +195,25 @@ export class EpochsController {
     }
 
     @Get(":id/receipts")
-    receipts(@Param("id") id: string, @Query("clientSeed") clientSeedRaw?: unknown) {
+    receipts(
+        @Param("id") id: string,
+        @Query("clientSeed") clientSeedRaw?: unknown,
+        @Query("limit") limitRaw?: unknown,
+        @Query("offset") offsetRaw?: unknown,
+    ) {
         const epochId = intParam(id);
         const epoch = this.engine.epochRow(epochId);
         if (epoch === undefined) throw new ApiError(404, "unknown epoch");
         const clientSeed = typeof clientSeedRaw === "string" ? clientSeedRaw : undefined;
-        const rows = this.engine.receiptRows(epochId, clientSeed);
+        const limit = intQuery(limitRaw, 100, 1, 1000, "limit must be 1..1000");
+        const offset = intQuery(offsetRaw, 0, 0, Number.MAX_SAFE_INTEGER, "offset must be >= 0");
+        const page = this.engine.receiptPage(epochId, clientSeed, limit, offset);
         return {
             epochId,
-            receipts: rows.map((row) => receiptJson(rowToReceipt(row, epoch.seed_commit as Hex), row.signature)),
+            total: page.total,
+            limit,
+            offset,
+            receipts: page.rows.map((row) => receiptJson(rowToReceipt(row, epoch.seed_commit as Hex), row.signature)),
         };
     }
 
