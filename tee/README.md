@@ -27,12 +27,39 @@ SIMULATED_TEE: the extension signs with `FORESEER_TEE_KEY` (hex env var). When
 unset it warns and uses the public reference test key from SPEC section 9.1.
 Real enclave key handling arrives with attestation on actual FCC hardware.
 
+## Contracts (Phase 4)
+
+`contracts/ForeseerInstructionSender.sol`: FORESEER ops with paid
+`sendOpenEpoch()` (fee split treasury/operator, excess forwarded as the
+registry instruction fee), pre-reveal `commitEpoch`, and trustless
+`anchorEpoch` that verifies the FORESEER-SPEC 6.3 EIP-712 EpochClose
+signature onchain (ecrecover to the attested teeId, low-s enforced, sha256
+seed-commitment binding) plus `verifyReceiptInclusion` (sorted-pair Merkle).
+Tested with Foundry against the golden vectors: the contract accepts the
+actual `closeSignature` from `spec/vectors/e2e.json` on chainId 114.
+
+```sh
+forge test    # 12 tests; forge-std is vendored in lib/
+```
+
 ## Test
 
 ```sh
 cd go
 go test ./...
+./scripts/test-conformance.sh go   # 19 wire fixtures incl. FORESEER ops
 ```
+
+Windows note: the conformance harness needs a jq whose stdout is LF. The
+winget jq emits CRLF; wrap it (`jq "$@" | tr -d '\r'`) or run under WSL.
+
+## Docker image
+
+```sh
+docker build -f go/Dockerfile -t foreseer-tee .
+```
+
+This is the image Coston2 runs (distroless, combined tee-node + extension).
 
 ## Run locally (simulated)
 

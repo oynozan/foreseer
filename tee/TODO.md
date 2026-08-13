@@ -14,6 +14,8 @@ Roadmap context: [root TODO.md](../TODO.md).
 
 ## Phase 4 hooks
 
-- [ ] Rewrite contracts/InstructionSender.sol for FORESEER ops
-- [ ] Commit and Merkle anchor transactions via InstructionSender
-- [ ] Update testdata/conformance fixtures for FORESEER ops
+- [x] ForeseerInstructionSender.sol: FORESEER ops, paid openEpoch with fee split
+- [x] Seed commitments (commitEpoch) and Merkle anchors (anchorEpoch, EIP-712 verified onchain)
+- [x] Foundry tests against the golden vectors (12 passing)
+- [x] FORESEER conformance fixtures (17, 18, 19) plus updated state fixture
+- [ ] Deploy ForeseerInstructionSender to Coston2 and register (needs funded key)

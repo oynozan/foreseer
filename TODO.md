@@ -29,10 +29,11 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 
 ## Phase 4: contracts
 
-- [ ] InstructionSender wiring for TEE messages
-- [ ] Seed commitment storage per epoch
-- [ ] Merkle root anchoring per epoch
-- [ ] Paid openEpoch() with fee split
+- [x] InstructionSender wiring for TEE messages (ForeseerInstructionSender.sol)
+- [x] Seed commitment storage per epoch (commitEpoch, bound by the signed close)
+- [x] Merkle root anchoring per epoch (anchorEpoch, EIP-712 verified onchain)
+- [x] Paid openEpoch() with fee split (treasury share bp plus operator balance)
+- [ ] Deploy and register on Coston2 (operator-run: funded key)
 
 ## Phase 5: player-facing verification
 
