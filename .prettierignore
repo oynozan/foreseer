@@ -1,0 +1,5 @@
+# generated vectors: language-neutral artifacts, never reformat
+spec/vectors/
+
+# submodule formats itself with its own config
+packages/ts/
