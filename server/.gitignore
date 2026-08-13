@@ -1,0 +1,14 @@
+# dependencies and build output
+node_modules/
+dist/
+
+# local databases
+data/
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# env
+.env
+.env.*

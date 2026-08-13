@@ -21,7 +21,7 @@ implementations must match exactly.
 | --- | --- |
 | `spec/` | FORESEER-SPEC v0.1 and golden test vectors (committed deliverables) |
 | `packages/ts` | npm package `foreseer.ts`: core, verifier, ReferenceTee. Git submodule |
-| `server/` | Orchestration service stub (Phase 2) |
+| `server/` | Orchestration service: epochs, SQLite receipt store, verify API (Phase 2) |
 | `tee/` | Go FCE extension stub (Phase 3) |
 | `TODO.md` | Whole-project MVP roadmap |
 

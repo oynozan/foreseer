@@ -1,0 +1,3 @@
+# pnpm rewrites these in its own style
+package.json
+pnpm-lock.yaml

@@ -12,12 +12,12 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Golden tests, property and edge tests, full e2e epoch test all green
 - [x] Register packages/ts as a git submodule of the root
 
-## Phase 2: server orchestration MVP
+## Phase 2: server orchestration MVP (done)
 
-- [ ] Epoch scheduler (open, resolve, close on a timer)
-- [ ] Receipt store on SQLite
-- [ ] Verify API (serve receipts, proofs, revealed seeds)
-- [ ] Operator API keys and per-operator rule registry
+- [x] Epoch scheduler (open, resolve, close on a timer)
+- [x] Receipt store on SQLite
+- [x] Verify API (serve receipts, proofs, revealed seeds)
+- [x] Operator API keys and per-operator rule registry
 
 ## Phase 3: Go TEE extension
 
