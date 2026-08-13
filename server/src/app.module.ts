@@ -6,11 +6,12 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import type Database from "better-sqlite3";
 import type { Engine } from "./engine";
 import { ApiExceptionFilter } from "./filters";
-import { ADMIN_KEY, DB, ENGINE, PLAY_RATE } from "./tokens";
+import { ADMIN_KEY, DB, ENGINE, PLAY_RATE, PRICE_PER_PLAY_WEI } from "./tokens";
 import {
     AdminController,
     EpochsController,
     HealthController,
+    MetricsController,
     PlayController,
     RulesController,
     VerifyController,
@@ -24,6 +25,7 @@ export interface AppOptions {
     adminKey: string;
     playLimit?: number;
     playWindowSeconds?: number;
+    pricePerPlayWei?: string;
 }
 
 @Module({})
@@ -33,6 +35,7 @@ export class AppModule {
             module: AppModule,
             controllers: [
                 HealthController,
+                MetricsController,
                 AdminController,
                 RulesController,
                 PlayController,
@@ -47,6 +50,7 @@ export class AppModule {
                     provide: PLAY_RATE,
                     useValue: { limit: options.playLimit ?? 60, windowSeconds: options.playWindowSeconds ?? 10 },
                 },
+                { provide: PRICE_PER_PLAY_WEI, useValue: BigInt(options.pricePerPlayWei ?? "0").toString() },
                 { provide: APP_FILTER, useClass: ApiExceptionFilter },
             ],
         };
@@ -58,6 +62,7 @@ export async function createApp(options: AppOptions): Promise<NestExpressApplica
         logger: false,
         bodyParser: false,
     });
+    app.enableCors();
     app.useBodyParser("json", { limit: BODY_LIMIT_BYTES });
     return app;
 }

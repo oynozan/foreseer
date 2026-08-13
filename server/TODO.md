@@ -12,7 +12,7 @@ Roadmap context: [root TODO.md](../TODO.md).
 
 ## Later
 
-- [ ] Billing hooks (usage metering per operator, Phase 6)
+- [x] Billing hooks (usage metering per operator, Phase 6): GET /admin/billing report
 - [ ] Swap simulated seed handling for the Go TEE (Phase 3): server relays instead of signing
 - [x] Cache Merkle trees of hot closed epochs (LRU of 8 in Engine.proofFor)
 - [x] Pagination on receipt listings (limit/offset with total on GET /epochs/:id/receipts)

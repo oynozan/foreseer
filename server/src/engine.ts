@@ -71,6 +71,10 @@ export class Engine {
         this.now = options.now ?? (() => Math.floor(Date.now() / 1000));
     }
 
+    nowSeconds(): number {
+        return this.now();
+    }
+
     openEpochRow(): EpochRow | undefined {
         return this.db.prepare("SELECT * FROM epochs WHERE closed_at IS NULL ORDER BY epoch_id DESC LIMIT 1").get() as
             EpochRow | undefined;

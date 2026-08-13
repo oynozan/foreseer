@@ -17,7 +17,7 @@ import type { Engine } from "./engine";
 import type { EpochRow, OperatorRow, RuleRow } from "./db";
 import { AdminGuard, OperatorGuard, PlayRateGuard } from "./guards";
 import type { ApiRequest } from "./guards";
-import { DB, ENGINE } from "./tokens";
+import { DB, ENGINE, PRICE_PER_PLAY_WEI } from "./tokens";
 
 const HASH = /^0x[0-9a-f]{64}$/;
 
@@ -83,12 +83,50 @@ export class HealthController {
     }
 }
 
+// Wall-clock start, captured at module init
+const startedAtMs = Date.now();
+
+@Controller()
+export class MetricsController {
+    constructor(
+        @Inject(DB) private readonly db: Database.Database,
+        @Inject(ENGINE) private readonly engine: Engine,
+    ) {}
+
+    @Get("metrics")
+    metrics() {
+        const count = (sql: string, ...args: number[]): number =>
+            (this.db.prepare(sql).get(...args) as { c: number }).c;
+        return {
+            uptimeSeconds: Math.floor((Date.now() - startedAtMs) / 1000),
+            epochsTotal: count("SELECT COUNT(*) AS c FROM epochs"),
+            epochsOpen: count("SELECT COUNT(*) AS c FROM epochs WHERE closed_at IS NULL"),
+            receiptsTotal: count("SELECT COUNT(*) AS c FROM receipts"),
+            operatorsTotal: count("SELECT COUNT(*) AS c FROM operators"),
+            merkleCacheHits: this.engine.merkleCacheHits,
+            playsLastHour: count(
+                "SELECT COUNT(*) AS c FROM receipts WHERE timestamp > ?",
+                this.engine.nowSeconds() - 3600,
+            ),
+        };
+    }
+}
+
+interface BillingRow {
+    operatorId: number;
+    name: string;
+    plays: number;
+    wins: number;
+    payoutBpSum: number;
+}
+
 @Controller("admin")
 @UseGuards(AdminGuard)
 export class AdminController {
     constructor(
         @Inject(DB) private readonly db: Database.Database,
         @Inject(ENGINE) private readonly engine: Engine,
+        @Inject(PRICE_PER_PLAY_WEI) private readonly pricePerPlayWei: string,
     ) {}
 
     @Post("operators")
@@ -115,6 +153,24 @@ export class AdminController {
         const closed = this.engine.closeOpen();
         if (closed === null) throw new ApiError(409, "no open epoch");
         return closed;
+    }
+
+    @Get("billing")
+    billing(@Query("from") fromRaw?: unknown, @Query("to") toRaw?: unknown) {
+        const from = intQuery(fromRaw, 0, 0, Number.MAX_SAFE_INTEGER, "from must be >= 0");
+        const to = intQuery(toRaw, this.engine.nowSeconds(), 0, Number.MAX_SAFE_INTEGER, "to must be >= 0");
+        const rows = this.db
+            .prepare(
+                "SELECT r.operator_id AS operatorId, o.name AS name, COUNT(*) AS plays, SUM(r.win) AS wins, SUM(r.payout_bp) AS payoutBpSum FROM receipts r JOIN operators o ON o.id = r.operator_id WHERE r.timestamp BETWEEN ? AND ? GROUP BY r.operator_id, o.name ORDER BY r.operator_id",
+            )
+            .all(from, to) as unknown as BillingRow[];
+        const price = BigInt(this.pricePerPlayWei);
+        return {
+            from,
+            to,
+            pricePerPlayWei: this.pricePerPlayWei,
+            operators: rows.map((row) => ({ ...row, amountDueWei: (BigInt(row.plays) * price).toString() })),
+        };
     }
 }
 

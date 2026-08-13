@@ -14,6 +14,7 @@ async function bootstrap(): Promise<void> {
     const privateKey = process.env.FORESEER_TEE_KEY as Hex | undefined;
     const playLimit = Number(process.env.FORESEER_PLAY_LIMIT ?? 60);
     const playWindowSeconds = Number(process.env.FORESEER_PLAY_WINDOW_SECONDS ?? 10);
+    const pricePerPlayWei = process.env.FORESEER_PRICE_PER_PLAY_WEI ?? "0";
 
     if (adminKey === "dev-admin-key") {
         console.warn("WARNING: using the default admin key, set FORESEER_ADMIN_KEY");
@@ -33,7 +34,7 @@ async function bootstrap(): Promise<void> {
         if (t.closed !== null) console.log(`epoch ${t.closed} closed, epoch ${t.open} open`);
     }, 5000);
 
-    const app = await createApp({ db, engine, adminKey, playLimit, playWindowSeconds });
+    const app = await createApp({ db, engine, adminKey, playLimit, playWindowSeconds, pricePerPlayWei });
     await app.listen(port);
     console.log(`foreseer-server on http://localhost:${port} teeId=${engine.teeId} epoch=${epochSeconds}s`);
 

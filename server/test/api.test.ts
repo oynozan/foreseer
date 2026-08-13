@@ -61,6 +61,17 @@ describe("api", () => {
         expect(res.json).toEqual({ ok: true, teeId: engine.teeId, chainId: 114 });
     });
 
+    it("serves public reads with open CORS", async () => {
+        const res = await fetch(`${base}/health`, { headers: { origin: "http://widget.example" } });
+        expect(res.status).toBe(200);
+        expect(res.headers.get("access-control-allow-origin")).toBe("*");
+        const preflight = await fetch(`${base}/health`, {
+            method: "OPTIONS",
+            headers: { origin: "http://widget.example", "access-control-request-method": "GET" },
+        });
+        expect(preflight.headers.get("access-control-allow-origin")).toBe("*");
+    });
+
     it("admin auth is required to create operators", async () => {
         expect((await call("POST", "/admin/operators", { name: "acme" })).status).toBe(401);
         expect((await call("POST", "/admin/operators", { name: "acme" }, { "x-admin-key": "wrong" })).status).toBe(401);
