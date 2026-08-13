@@ -1,0 +1,114 @@
+# Game rules
+
+A Foreseer rule is a small JSON document, not code. That is deliberate: a
+rule can be hashed, published, audited, and recomputed by anyone, and no
+implementation ever needs to run operator-supplied code.
+
+## Anatomy of a rule
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 9999, "count": 1 },
+    "win": { "op": ">", "l": { "r": 0 }, "r": { "c": 5000 } },
+    "payout_bp": 19800
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `v` | rule format version, always 0 today |
+| `random` | how many integers to draw and from which range (inclusive) |
+| `win` | a boolean expression over the drawn values |
+| `payout_bp` | payout in basis points when `win` is true: 19800 = 1.98x |
+
+Inside `win`:
+
+- `{ "r": 0 }` means "drawn value number 0" (0-based).
+- `{ "c": 5000 }` means the constant 5000.
+- Comparisons: `>`, `>=`, `<`, `<=`, `==`, `!=`.
+- Logic: `{"op": "and", "args": [...]}`, `{"op": "or", "args": [...]}`,
+  `{"op": "not", "arg": ...}`.
+- Arithmetic: `{"op": "mod", "l": operand, "r": {"c": n}}` with a constant
+  divisor of at least 1.
+
+A losing bet always has `payoutBp: 0` in its receipt; a winning bet carries
+the rule's `payout_bp`.
+
+## Example: coinflip
+
+Draw one value that is 0 or 1, win on 1, pay just under 2x:
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 1, "count": 1 },
+    "win": { "op": "==", "l": { "r": 0 }, "r": { "c": 1 } },
+    "payout_bp": 19800
+}
+```
+
+## Example: three cards, matching ranks
+
+Rules can combine several draws. This one draws three cards (0..51) and wins
+if either adjacent pair shares a rank (`mod 13` maps a card to its rank):
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 51, "count": 3 },
+    "win": {
+        "op": "or",
+        "args": [
+            { "op": "==", "l": { "op": "mod", "l": { "r": 0 }, "r": { "c": 13 } },
+                          "r": { "op": "mod", "l": { "r": 1 }, "r": { "c": 13 } } },
+            { "op": "==", "l": { "op": "mod", "l": { "r": 1 }, "r": { "c": 13 } },
+                          "r": { "op": "mod", "l": { "r": 2 }, "r": { "c": 13 } } }
+        ]
+    },
+    "payout_bp": 47000
+}
+```
+
+## Validation, exhaustively
+
+Implementations reject anything the grammar does not explicitly allow. The
+important cases (the full list is FORESEER-SPEC section 4.2):
+
+- unknown or missing keys anywhere, extra keys anywhere
+- `count` outside 1..16, ranges outside uint32, `min > max`
+- draw references at or beyond `count` (a 1-draw rule cannot use `{"r": 1}`)
+- `mod` by zero or by anything that is not a constant
+- floats anywhere, including whole valued ones like `5000.0` in the source
+  text (text level parsers such as the Go engine reject the token itself)
+- `and`/`or` with fewer than two arguments
+- nesting deeper than 32 levels
+
+## Canonical form and the rule hash
+
+Before hashing, a rule is serialized canonically: UTF-8, keys sorted, no
+whitespace, integers only. The dice rule above canonicalizes to exactly:
+
+```
+{"payout_bp":19800,"random":{"count":1,"max":9999,"min":0,"type":"int"},"v":0,"win":{"l":{"r":0},"op":">","r":{"c":5000}}}
+```
+
+and its SHA-256 is the `ruleHash` you see in receipts. Key order in your
+source file does not matter; the canonical bytes are always the same, so the
+same game always has the same hash in every implementation.
+
+## Building rules with the SDK
+
+You rarely write rule JSON by hand:
+
+```ts
+import { dice, coinflip } from "foreseer.ts";
+
+const overDice = dice({ target: 4999, mode: "over" }); // pays 19800 bp
+const under = dice({ target: 2500, mode: "under" });   // pays by true odds
+const flip = coinflip();
+```
+
+The dice preset computes `payout_bp` from the actual win chance at a 99
+percent return to player, floor-rounded, so the house edge is exactly 1
+percent for every target.

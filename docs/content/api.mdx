@@ -1,0 +1,119 @@
+# Server API
+
+The Foreseer server orchestrates epochs, stores receipts, and serves
+everything a player needs to verify. Reads are public; playing needs an
+operator key; administration needs the admin key. All bodies are JSON,
+capped at 64 KiB.
+
+Base URL in the examples: `http://localhost:8787`.
+
+## Authentication
+
+| Header | Who | Where it comes from |
+| --- | --- | --- |
+| none | players, verifiers | all `GET` endpoints are public |
+| `x-api-key` | game operators | issued once by `POST /admin/operators` |
+| `x-admin-key` | the service owner | `FORESEER_ADMIN_KEY` environment variable |
+
+Operator keys are 192-bit random secrets shown exactly once at creation;
+the server stores only their SHA-256 hash.
+
+## Operator flow, end to end
+
+Create an operator (admin):
+
+```sh
+curl -X POST localhost:8787/admin/operators \
+  -H "x-admin-key: $ADMIN" -H "content-type: application/json" \
+  -d '{"name":"casino-royale"}'
+# {"id":1,"name":"casino-royale","apiKey":"fsk_0c143c38b5c04d22ae0f5b03b8601e50..."}
+```
+
+Register a rule (operator, idempotent by hash):
+
+```sh
+curl -X POST localhost:8787/rules \
+  -H "x-api-key: $KEY" -H "content-type: application/json" \
+  -d '{"rule":{"v":0,"random":{"type":"int","min":0,"max":9999,"count":1},
+       "win":{"op":">","l":{"r":0},"r":{"c":4999}},"payout_bp":19800}}'
+# {"ruleHash":"0xdd9d92df5a6f56bc664137373c13f866d3f7fb51fb4650ad09b85e8024779125"}
+```
+
+Play (operator, on behalf of a player):
+
+```sh
+curl -X POST localhost:8787/play \
+  -H "x-api-key: $KEY" -H "content-type: application/json" \
+  -d '{"clientSeed":"alice","ruleHash":"0xdd9d...9125"}'
+```
+
+```json
+{
+    "epochId": 1,
+    "betId": 0,
+    "receipt": {
+        "specVersion": 1,
+        "epochId": 1,
+        "betId": 0,
+        "seedCommit": "0xd07fde38a1151187473c4366703d242b682ab2ceaf11c3de5963d623ea9834ee",
+        "clientSeed": "alice",
+        "nonce": 0,
+        "ruleHash": "0xdd9d92df5a6f56bc664137373c13f866d3f7fb51fb4650ad09b85e8024779125",
+        "draws": [7334],
+        "win": true,
+        "payoutBp": 19800,
+        "timestamp": 1786591860
+    },
+    "signature": "0x2004931fd177941988091a9ae0a2b536bb45c8bdaa8c52d4b92436decdcec966..."
+}
+```
+
+Nonces auto-increment per `clientSeed` within an epoch; pass `"nonce"`
+explicitly if you want the server to reject out-of-sequence plays with a
+409.
+
+## Player-facing reads
+
+| Method | Path | Returns |
+| --- | --- | --- |
+| GET | `/health` | `{ok, teeId, chainId}`: the TEE address to verify against |
+| GET | `/epochs/current` | open epoch id, `seedCommit`, timing |
+| GET | `/epochs/:id` | epoch record; `serverSeed` is `null` until the epoch closes |
+| GET | `/epochs/:id/receipts` | receipts, filter `?clientSeed=`, page with `limit` (max 1000) and `offset`, returns `total` |
+| GET | `/epochs/:id/proof/:betId` | `{digest, proof, merkleRoot}` after close |
+| GET | `/rules/:ruleHash` | the rule document for a hash |
+| GET | `/verify/:epochId/:betId` | the server runs the offline checks and reports them |
+| GET | `/metrics` | uptime, epoch and receipt counts, cache hits, plays in the last hour |
+
+`/verify` is a convenience for quick spot checks. The honest path is
+client-side: fetch the epoch, the rule, and the proof, then run the checks
+yourself with `foreseer.ts` or the browser widget; the server cannot lie to
+code it does not run.
+
+## Administration
+
+| Method | Path | What |
+| --- | --- | --- |
+| POST | `/admin/operators` | create an operator, returns the key once |
+| POST | `/admin/close` | force-close the open epoch (a scheduler also closes them on a timer) |
+| GET | `/admin/billing?from=&to=` | per-operator plays, wins, and `amountDueWei` (plays times `FORESEER_PRICE_PER_PLAY_WEI`, as a decimal string) |
+
+## Errors
+
+Every error is `{"error": "message"}` with a conventional status: 400
+invalid input, 401 missing or wrong key, 404 unknown resource, 409 conflict
+(nonce mismatch, duplicate operator, no open epoch), 413 oversized body, 429
+rate limited, 500 `{"error":"internal error"}` with details only in server
+logs.
+
+## Configuration
+
+| Env | Default | Meaning |
+| --- | --- | --- |
+| `PORT` | 8787 | HTTP port |
+| `FORESEER_DB` | `data/foreseer.db` | SQLite path (WAL mode) |
+| `FORESEER_EPOCH_SECONDS` | 300 | epoch length for the scheduler |
+| `FORESEER_ADMIN_KEY` | dev value, warns | admin header secret |
+| `FORESEER_TEE_KEY` | reference test key, warns | receipt signing key (SIMULATED mode) |
+| `FORESEER_PLAY_LIMIT` / `FORESEER_PLAY_WINDOW_SECONDS` | 60 / 10 | per-operator rate limit on `/play` |
+| `FORESEER_PRICE_PER_PLAY_WEI` | 0 | billing price used by the report |

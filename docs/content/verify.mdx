@@ -1,0 +1,84 @@
+# Verify your bet
+
+You do not have to trust anyone's word, including ours. This page shows how
+to check a bet three ways: with the browser widget, with three lines of
+code, or fully by hand.
+
+## The six checks
+
+| # | Question it answers | Runs |
+| --- | --- | --- |
+| 1 | Was this receipt really signed by the TEE? | in your browser |
+| 2 | Is that TEE registered by Flare attestation? | onchain read |
+| 3 | Does the revealed seed match the pre-bet commitment? | in your browser |
+| 4 | Was that commitment anchored before I bet? | onchain read |
+| 5 | Do my draws, win, and payout recompute from the seed? | in your browser |
+| 6 | Is my receipt inside the anchored Merkle root? | browser + onchain |
+
+Checks 3, 5, and 6 need the revealed seed, so they run after the epoch
+closes. Until then your receipt's signature (check 1) already binds the
+house.
+
+## Option 1: the widget
+
+Open the verifier page (`docs-site/verify.html` in the repository, or your
+operator's hosted copy). Either paste your receipt or point it at a Foreseer
+server with your epoch and bet id; press Verify and watch the checks light
+up. Everything runs locally: nothing you paste leaves the page.
+
+Tip: press "Load golden example" to see a known-good bet verify, then break
+a digit somewhere and watch exactly which check catches it.
+
+## Option 2: a few lines of code
+
+```ts
+import { toBytes, merkleProof, receiptDigest } from "foreseer.ts";
+import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "foreseer.ts/verify";
+
+const domain = { name: "Foreseer", version: "0", chainId: 114n };
+
+const sig = verifyReceiptSignature({ receipt, signature }, domain, expectedTeeId);
+const commit = verifyCommit(serverSeed, receipt.seedCommit);
+const outcome = verifyOutcome(receipt, rule, serverSeed);
+const merkle = verifyMerkleProof(receiptDigest(receipt, domain), proof.map(toBytes), toBytes(merkleRoot));
+
+console.log({ signature: sig.ok, commit, outcome: outcome.ok, merkle });
+```
+
+Always pass `expectedTeeId` (the attested TEE address, from the registry or
+`GET /health`). Without it a forged receipt can carry a valid-looking
+signature from some other key.
+
+Fetching the inputs from a server:
+
+```ts
+const epoch = await fetch(`${base}/epochs/7`).then(r => r.json());        // serverSeed after close
+const proof = await fetch(`${base}/epochs/7/proof/42`).then(r => r.json());
+const rule  = await fetch(`${base}/rules/${receipt.ruleHash}`).then(r => r.json());
+```
+
+## Option 3: by hand, no Foreseer code at all
+
+Everything is standard cryptography. To recompute a dice roll:
+
+```python
+import hashlib, hmac
+
+seed = bytes.fromhex("000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f")
+block = hmac.new(seed, b"alice:0:0", hashlib.sha256).digest()
+x = int.from_bytes(block[:4], "big")
+assert x < 4294960000          # otherwise take the next 4 bytes
+print(x % 10000)               # 3725, matching the receipt
+```
+
+The commitment is plain SHA-256 of the seed. The receipt digest is standard
+EIP-712 (any Ethereum library can build it from the spec's type strings) and
+the Merkle tree is sorted-pair keccak256, compatible with OpenZeppelin's
+`MerkleProof`. FORESEER-SPEC v0.1 defines every byte.
+
+## What a failure means
+
+If any check fails, keep the receipt: it is cryptographic evidence. A
+signature or outcome mismatch on a genuine receipt means the operator, the
+TEE image, or the data path misbehaved, and the receipt plus the anchored
+epoch is exactly what you show the world.

@@ -1,0 +1,70 @@
+# What is Foreseer
+
+Foreseer is a provably fair engine for iGaming. It answers one question with
+mathematics instead of trust: **how do I know the house did not cheat me?**
+
+Game outcomes are computed inside a Trusted Execution Environment (a TEE, on
+Flare Confidential Compute), committed to before you bet, and fully
+verifiable by you afterwards, in your own browser, with open source code.
+
+## The one minute version
+
+1. Before any bet, the TEE generates a secret 32 byte `serverSeed` and
+   publishes its SHA-256 hash onchain. This is the **commitment**: the house
+   locks in its randomness before knowing your bets.
+2. You bet with your own `clientSeed`. Your outcome is a pure function of
+   the server seed, your seed, and a counter. The house cannot pick outcomes
+   without breaking its commitment; you cannot predict them without the
+   secret seed.
+3. Every outcome comes back instantly as a **receipt** signed by the TEE's
+   identity key. Think of it as a cryptographic betting slip.
+4. When the epoch closes, the seed is revealed and a Merkle root of all
+   receipts is anchored onchain. Now everyone can recompute everything.
+
+## A real receipt
+
+This is an actual receipt from the golden test vectors: a dice bet needing
+over 5000, which rolled 3725 and lost.
+
+```json
+{
+    "receipt": {
+        "specVersion": 1,
+        "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+        "epochId": 1,
+        "betId": 0,
+        "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+        "clientSeed": "alice",
+        "nonce": 0,
+        "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+        "draws": [3725],
+        "win": false,
+        "payoutBp": 0,
+        "timestamp": 1755000000
+    },
+    "signature": "0x040650963bbdc90b8ab031ca1c3c029c1fa7ae60138fbf06b65631a2155370aa0d92f1961f67878ed41e469d20306092c95587ff7045d26c032ae3915f6dae6c1c"
+}
+```
+
+Every field is covered by the signature. If the house later claimed this bet
+never happened, or that it rolled something else, the receipt proves
+otherwise, and the Merkle anchor proves the receipt belongs to the epoch.
+
+## Who this documentation is for
+
+- **Players** who want to check their bets: start with
+  [Verify your bet](/verify).
+- **Operators** integrating Foreseer into a game: start with the
+  [Server API](/api) and the [TypeScript SDK](/sdk).
+- **Auditors and the curious**: [How it works](/how-it-works),
+  [Architecture](/architecture), and the [Security model](/security), then
+  the normative FORESEER-SPEC v0.1 in the repository (`spec/SPEC.md`).
+
+## Guarantees, stated honestly
+
+Foreseer makes outcomes **tamper evident**, not magically fair. The TEE
+necessarily knows outcomes during an epoch; what protects you is that its
+code is attested by Flare, its seed was committed before your bet, and every
+receipt is recomputable by anyone after the reveal. Three independent
+implementations (TypeScript, Go, Solidity) reproduce the protocol byte for
+byte against shared golden vectors, so no single codebase is trusted either.

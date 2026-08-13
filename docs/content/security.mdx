@@ -1,0 +1,74 @@
+# Security model
+
+Fairness claims are worthless without a threat model. This page says exactly
+what Foreseer defends against, how, and what it assumes.
+
+## Randomness
+
+Outcomes come from HMAC-SHA256 keyed with the secret epoch seed. Under the
+standard PRF assumption, without the seed the output stream is
+computationally indistinguishable from true randomness: no player and no
+outside observer can predict a roll before the reveal. Rejection sampling
+makes every integer draw exactly uniform; there is no modulo bias, for any
+range, by arithmetic rather than by approximation.
+
+This is measured, not just argued: the stress suite runs a statistical
+battery over the real pipeline (chi-square uniformity, monobit frequency,
+serial correlation, avalanche on seed bits, rejection-rate agreement with
+theory, collision checks), all passing inside five-sigma bands.
+
+## The house cannot cheat quietly
+
+| Attack | Defense |
+| --- | --- |
+| Pick a favorable seed after seeing bets | seed is hash-committed before any bet; check 3 catches a swap |
+| Alter a draw, win flag, or payout | EIP-712 signature breaks (check 1); recomputation disagrees (check 5) |
+| Swap the rule after the fact | the rule's canonical hash is inside the signed receipt |
+| Deny a bet ever happened | the receipt is signed and Merkle-anchored (check 6) |
+| Sign with a different machine | recovered address must equal the attested TEE identity (checks 1, 2) |
+| Replay a signature onto other data | high-s forms rejected, digest binds every field and the chain id |
+
+The player cannot cheat either: outcomes are fixed by
+`(serverSeed, clientSeed, nonce)`, nonces are strictly sequential, and the
+verifier rejects gaps.
+
+## What is assumed
+
+- **Flare attestation is honest**: the TEE registry binds the identity
+  address to a measured image. If the enclave or attestation is broken, the
+  commitment scheme still exposes tampering after the fact, but pre-reveal
+  secrecy weakens.
+- **The TEE knows outcomes during an epoch.** By design; that knowledge is
+  constrained by attested code, and everything becomes publicly checkable at
+  reveal.
+- **Players use fresh clientSeeds** if they want their stream unlinkable to
+  previous sessions (`generateClientSeed()` exists for exactly this).
+
+## Server security, audited
+
+The orchestration server was audited in-session with fixes and regression
+tests (`SECURITY-AUDIT.md` has the full trail):
+
+- **SQL injection: none.** Every query is parameterized; the test suite
+  fires classic payloads (`'; DROP TABLE receipts; --`,
+  `' OR '1'='1`, UNION probes) through every input path and asserts the
+  schema and data survive untouched.
+- **Credentials hashed at rest.** Operator API keys are 192-bit random,
+  shown once, stored only as SHA-256 hashes; the admin key check is
+  constant-time. A stolen database file contains no usable secrets beyond
+  what the protocol reveals anyway.
+- **No internals in errors.** Unexpected failures return a generic 500 and
+  log server-side; tests assert the body.
+- **Bounded everything.** 64 KiB request bodies, paginated listings, rule
+  size and depth caps from the consensus validator, per-operator rate
+  limits on plays.
+- **Open CORS is safe here** because authentication is header-based with no
+  cookies: a malicious website cannot attach your operator key.
+- Dependency audits: server clean; one accepted low-severity advisory in a
+  dev-only bundler path, documented in the audit report.
+
+## Disclosure
+
+Found something? Open an issue with the receipt or request trace, or use the
+incident contacts in `HARDENING.md`. A receipt that fails verification is
+exactly the evidence to attach.

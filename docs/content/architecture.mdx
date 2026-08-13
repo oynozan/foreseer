@@ -1,0 +1,79 @@
+# Architecture
+
+Foreseer is a monorepo with four moving parts and one contract between
+them: FORESEER-SPEC v0.1 plus its golden test vectors.
+
+```
+players / operators
+        |
+        v
+  server/        Nest.js + SQLite: epochs, receipts, verify API, billing
+        |
+        v
+  tee/           Go FCE extension on Flare Confidential Compute (signs everything)
+        |
+        v
+  contracts      ForeseerInstructionSender + OperatorBond on Flare
+        ^
+        |
+  packages/ts    foreseer.ts: the reference engine and the player's verifier
+```
+
+## The spec and the vectors are the real interface
+
+`spec/SPEC.md` defines every byte: the HMAC stream, rejection sampling, rule
+canonicalization, EIP-712 structures, commit/reveal, and the Merkle tree.
+`spec/vectors/` holds machine-checkable JSON derived from fixed seeds and
+keys: derivation blocks, draw sequences (including forced rejection-path
+cases), canonical rules with hashes, fully signed receipts, Merkle trees
+with proofs, and one complete epoch.
+
+Three implementations must reproduce those vectors byte for byte, and do:
+
+- **TypeScript** (`packages/ts`): the normative reference, plus the browser
+  verifier bundle.
+- **Go** (`tee/go/internal/engine`): the enclave engine; its test suite
+  replays every vector including every RFC6979 signature.
+- **Solidity** (`tee/contracts`): the anchoring contract accepts the golden
+  epoch close signature onchain via ecrecover.
+
+If you port Foreseer to a fourth language, the vectors are your conformance
+suite and three independent referees already exist.
+
+## Epoch lifecycle
+
+1. `openEpoch`: the TEE creates a seed, the commitment goes out (and, once
+   deployed, onchain through `sendOpenEpoch`, which also splits the paid
+   epoch fee between treasury and operator pool).
+2. `play`: bets stream in; each returns a signed receipt immediately. State
+   (nonces per clientSeed, sequential betIds) lives in SQLite server-side,
+   so a restart mid-epoch loses nothing.
+3. `closeEpoch`: the TEE reveals the seed, builds the Merkle tree, and signs
+   an `EpochClose` structure binding commitment, seed, root, and count.
+4. `anchorEpoch`: anyone can submit that signed close to the contract; it
+   verifies the signature against the attested TEE identity and stores the
+   root. From here every receipt is provable forever.
+
+## Trust boundaries
+
+- The **server** is untrusted for fairness. It orchestrates and stores, but
+  every artifact it hands out is TEE-signed and player-recomputable.
+- The **TEE** is trusted only as far as Flare attestation: the registry
+  binds an identity address to a measured image, and that address is what
+  every signature check expects.
+- The **contract** is trustless verification: it does not believe anyone;
+  it checks the EIP-712 signature, the low-s rule, and the SHA-256
+  commitment binding before anchoring anything.
+- The **player** trusts open source math running on their own machine.
+
+## Where things live
+
+| Path | What you find there |
+| --- | --- |
+| `spec/` | the normative spec and the golden vectors |
+| `packages/ts` | `foreseer.ts` (its own git repository, vendored as a submodule) |
+| `server/` | the orchestration service and its test suite |
+| `tee/` | the Go extension, contracts, deployment tooling (based on Flare's scaffold) |
+| `docs-site/` | the static verifier widget |
+| `docs/` | this documentation |
+| `HARDENING.md`, `SECURITY-AUDIT.md` | operations runbook and the audit trail |

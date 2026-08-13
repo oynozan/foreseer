@@ -1,0 +1,113 @@
+# How it works
+
+This page walks one bet through the whole protocol with real numbers. All
+values come from the project's golden test vectors, so you can reproduce
+every step yourself.
+
+## Step 1: the commitment
+
+An epoch begins with the TEE generating a secret 32 byte seed. The test
+vectors use an intentionally simple one:
+
+```
+serverSeed = 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+```
+
+Before any bet, the TEE publishes the SHA-256 hash of that seed:
+
+```
+seedCommit = SHA256(serverSeed)
+           = 0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd
+```
+
+The commitment goes onchain. From this moment the house cannot change its
+randomness: any other seed would hash to something else.
+
+## Step 2: your bet gets its own random stream
+
+Alice bets with `clientSeed = "alice"`. Her first bet uses `nonce = 0`, her
+second `nonce = 1`, and so on. Each bet reads bytes from a private stream:
+
+```
+block_i = HMAC-SHA256(key = serverSeed, msg = "alice:0:" + i)
+stream  = block_0 || block_1 || ...
+```
+
+The message for the first block is literally the ASCII string `"alice:0:0"`.
+Nothing exotic: you can reproduce it in any language with an HMAC library.
+
+Why this is fair: HMAC-SHA256 acts as a pseudorandom function. Without the
+secret seed the stream is indistinguishable from random noise, so nobody can
+predict outcomes. With the seed (after the reveal) it is perfectly
+deterministic, so everybody can recompute them.
+
+## Step 3: unbiased numbers
+
+A dice roll needs a number from 0 to 9999. Naively taking
+`bytes mod 10000` would be biased, because 2^32 is not a multiple of 10000.
+Foreseer uses rejection sampling instead:
+
+1. Read 4 bytes from the stream as a big endian number `x`.
+2. If `x >= 4294960000` (the largest multiple of 10000 below 2^32), throw it
+   away and read 4 more bytes.
+3. Otherwise the roll is `x mod 10000`.
+
+The rejection window is tiny (about 0.00017 percent) but it makes every
+value **exactly** equally likely, and the golden vectors deliberately
+include cases that hit the rejection path so every implementation handles it
+identically. For Alice's first bet the stream produces `3725`.
+
+## Step 4: the rule decides
+
+Rules are data, not code. Alice played classic dice over 5000:
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 9999, "count": 1 },
+    "win": { "op": ">", "l": { "r": 0 }, "r": { "c": 5000 } },
+    "payout_bp": 19803
+}
+```
+
+Read it as: draw one integer in 0..9999, win if draw number 0 is greater
+than 5000, and a win pays 1.9803x. Since `3725 > 5000` is false, Alice
+lost this one, and `payoutBp` in her receipt is 0.
+
+The rule itself is hashed (canonical JSON, SHA-256) and that hash goes into
+the receipt, so the house cannot quietly swap rules after the fact.
+
+## Step 5: the receipt
+
+The TEE signs everything above as one EIP-712 structure with its identity
+key. The signature covers the epoch, the bet id, the commitment, Alice's
+seed and nonce, the rule hash, the draws, the win flag, and the payout.
+Alice's wallet-compatible receipt is shown on the [front page](/).
+
+## Step 6: reveal and anchor
+
+When the epoch closes, the TEE reveals `serverSeed` and builds a Merkle tree
+over all receipt digests. For the golden epoch of 12 bets:
+
+```
+merkleRoot = 0x6c4fd3095720b35bba7b5379fa23f575fc82b81edb2e8e4e1fabb3ec296b4c5e
+```
+
+The root and the revealed seed are anchored onchain with one more TEE
+signature. Now anyone can check that the revealed seed matches the
+commitment, recompute any bet from scratch, and prove any receipt belongs to
+the epoch with a short Merkle proof.
+
+## What would cheating look like?
+
+- **Different seed after the fact**: its hash would not match the anchored
+  commitment. Caught by check 3.
+- **Doctored draw or flipped win**: the receipt signature breaks and the
+  recomputation disagrees. Caught by checks 1 and 5.
+- **A receipt quietly dropped from the epoch**: its Merkle proof cannot
+  reach the anchored root. Caught by check 6.
+- **A different machine signing receipts**: the recovered address does not
+  match the attested TEE identity. Caught by checks 1 and 2.
+
+The six checks are listed on [Verify your bet](/verify); four of them run in
+your browser today and two are onchain reads.
