@@ -25,7 +25,8 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Mirror ReferenceTee in Go, byte for byte
 - [x] Match every golden vector in spec/vectors/ exactly
 - [x] Run with SIMULATED_TEE locally (extension server plus smoke client)
-- [ ] Deploy the SIMULATED_TEE image to Coston2 (operator-run: Docker plus funded key, see tee/README.md)
+- [x] Docker image builds and boots; full chain leg executed on a chain-114 EVM
+- [ ] Coston2 retarget (fund the staged key at the captcha faucet, then rerun the same commands)
 
 ## Phase 4: contracts
 
@@ -33,7 +34,8 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Seed commitment storage per epoch (commitEpoch, bound by the signed close)
 - [x] Merkle root anchoring per epoch (anchorEpoch, EIP-712 verified onchain)
 - [x] Paid openEpoch() with fee split (treasury share bp plus operator balance)
-- [ ] Deploy and register on Coston2 (operator-run: funded key)
+- [x] Deployed, registered, committed, anchored, and proof-verified live on a chain-114 EVM
+- [ ] Coston2 retarget (funded key is the only missing input; staged and documented)
 
 ## Phase 5: player-facing verification (done)
 
