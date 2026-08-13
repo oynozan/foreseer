@@ -46,6 +46,7 @@ behavior. All arithmetic in this spec is exact integer arithmetic.
   `(epochId, clientSeed)` pair.
 - `epochId`, `betId`, `timestamp`: uint64. `specVersion`: uint16, value 1 for
   this spec version. `payoutBp` and every drawn value: uint32.
+- `chainId`: uint256 (it is an EIP-712 domain field, §5.1).
 
 ### §1.4 Integer text encoding
 
@@ -170,9 +171,13 @@ of them; anything not explicitly allowed by §4.1 is invalid.
 11. An `and` or `or` whose `args` is not an array of at least 2 boolExprs.
 12. A comparison or `mod` argument that is a boolExpr; an `and`/`or`/`not`
     argument that is an intExpr or operand.
-13. Any number anywhere that is not an integer (floats are invalid even if
-    whole-valued in the source text, e.g. `5.0`), any null, any boolean
-    literal, any string where a number or object is required.
+13. Any number anywhere that is not an integer, any null, any boolean
+    literal, any string where a number or object is required. Validation
+    operates on parsed values. A rule document whose source text writes a
+    number as a float (`5.0`, `5e3`) is malformed at the transport layer
+    (§1.4): implementations that parse rule text (such as the Go engine)
+    MUST reject such tokens at parse time. Canonical bytes (§4.3) never
+    contain them, so `ruleHash` is unaffected either way.
 14. `win` nesting depth greater than 32 (an operand has depth 1, each
     expression adds 1).
 
