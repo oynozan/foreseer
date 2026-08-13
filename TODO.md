@@ -21,10 +21,11 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 
 ## Phase 3: Go TEE extension
 
-- [ ] Scaffold tee/ from fce-extension-scaffold
-- [ ] Mirror ReferenceTee in Go, byte for byte
-- [ ] Match every golden vector in spec/vectors/ exactly
-- [ ] Run on Coston2 with SIMULATED_TEE
+- [x] Scaffold tee/ from fce-extension-scaffold
+- [x] Mirror ReferenceTee in Go, byte for byte
+- [x] Match every golden vector in spec/vectors/ exactly
+- [x] Run with SIMULATED_TEE locally (extension server plus smoke client)
+- [ ] Deploy the SIMULATED_TEE image to Coston2 (operator-run: Docker plus funded key, see tee/README.md)
 
 ## Phase 4: contracts
 

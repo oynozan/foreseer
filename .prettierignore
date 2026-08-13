@@ -3,3 +3,6 @@ spec/vectors/
 
 # submodule formats itself with its own config
 packages/ts/
+
+# vendored scaffold and go code format themselves
+tee/
