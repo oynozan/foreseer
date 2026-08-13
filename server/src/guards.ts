@@ -65,7 +65,9 @@ export class OperatorGuard implements CanActivate {
         const req = context.switchToHttp().getRequest<ApiRequest>();
         const key = req.headers["x-api-key"];
         if (typeof key !== "string") throw new ApiError(401, "x-api-key header required");
-        const row = this.db.prepare("SELECT * FROM operators WHERE api_key = ?").get(key) as OperatorRow | undefined;
+        const keyHash = createHash("sha256").update(key, "utf8").digest("hex");
+        const row = this.db.prepare("SELECT * FROM operators WHERE api_key_hash = ?").get(keyHash) as
+            OperatorRow | undefined;
         if (row === undefined) throw new ApiError(401, "unknown api key");
         req.operator = row;
         return true;

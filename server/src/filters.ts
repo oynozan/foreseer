@@ -29,6 +29,8 @@ export class ApiExceptionFilter implements ExceptionFilter {
             res.status(413).json({ error: "body too large" });
             return;
         }
-        res.status(500).json({ error: exception instanceof Error ? exception.message : "internal error" });
+        // Never leak internals to clients, log them instead
+        console.error("unhandled error:", exception);
+        res.status(500).json({ error: "internal error" });
     }
 }

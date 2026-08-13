@@ -4,7 +4,7 @@ const SCHEMA = `
 CREATE TABLE IF NOT EXISTS operators (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
-    api_key TEXT NOT NULL UNIQUE,
+    api_key_hash TEXT NOT NULL UNIQUE,
     created_at INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS rules (
@@ -51,7 +51,7 @@ export function openDb(path: string): Database.Database {
 export interface OperatorRow {
     id: number;
     name: string;
-    api_key: string;
+    api_key_hash: string;
     created_at: number;
 }
 

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Inject, Param, Post, Query, Req, UseGuards } from "@nestjs/common";
-import { randomBytes } from "node:crypto";
+import { createHash, randomBytes } from "node:crypto";
 import type Database from "better-sqlite3";
 import {
     isValidRule,
@@ -136,10 +136,11 @@ export class AdminController {
             throw new ApiError(400, "name must be a 1..64 char string");
         }
         const apiKey = `fsk_${randomBytes(24).toString("hex")}`;
+        const keyHash = createHash("sha256").update(apiKey, "utf8").digest("hex");
         try {
             this.db
-                .prepare("INSERT INTO operators (name, api_key, created_at) VALUES (?, ?, ?)")
-                .run(name, apiKey, Math.floor(Date.now() / 1000));
+                .prepare("INSERT INTO operators (name, api_key_hash, created_at) VALUES (?, ?, ?)")
+                .run(name, keyHash, Math.floor(Date.now() / 1000));
         } catch {
             throw new ApiError(409, "operator name already exists");
         }
