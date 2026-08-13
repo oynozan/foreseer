@@ -72,7 +72,23 @@ FORESEER_EXTENSION_URL=http://localhost:8095 go run ./cmd/foreseer-smoke
 The smoke client opens an epoch, plays three dice bets, closes the epoch, and
 prints receipts, the revealed seed, the Merkle root, and the close signature.
 
-## Coston2
+## Coston2 deployment (live)
+
+Deployed 2026-08-14 from `0x84ef59f489879c00dd2d60c5b7f5a94ee20a85a5`:
+
+| Contract | Address |
+| --- | --- |
+| ForeseerInstructionSender | `0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6` |
+| OperatorBond | `0xAe260f04eCe439aD21427381e0032ad9B2f11e69` |
+
+The golden epoch is anchored on the public network: `commitEpoch` tx
+`0xee82feb5...28b2d5`, `anchorEpoch` tx `0x293c0e32...d2529f` (the contract
+verified the golden TEE close signature via ecrecover on chain id 114), and
+`verifyReceiptInclusion` answers true for golden receipt 0 over public RPC.
+An operator bond of 1 C2FLR is active. Remaining: extension registration in
+the Flare registry via the scaffold pipeline below.
+
+## Coston2 pipeline
 
 The scaffold ships the whole deployment pipeline: `scripts/full-setup.sh`,
 `docker-compose.coston2.yaml`, contract deployment and registration tools

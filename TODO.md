@@ -26,7 +26,7 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Match every golden vector in spec/vectors/ exactly
 - [x] Run with SIMULATED_TEE locally (extension server plus smoke client)
 - [x] Docker image builds and boots; full chain leg executed on a chain-114 EVM
-- [ ] Coston2 retarget (fund the staged key at the captcha faucet, then rerun the same commands)
+- [x] Coston2 live: image built, contracts deployed, golden epoch anchored (registration via scaffold pipeline pending)
 
 ## Phase 4: contracts
 
@@ -35,7 +35,7 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Merkle root anchoring per epoch (anchorEpoch, EIP-712 verified onchain)
 - [x] Paid openEpoch() with fee split (treasury share bp plus operator balance)
 - [x] Deployed, registered, committed, anchored, and proof-verified live on a chain-114 EVM
-- [ ] Coston2 retarget (funded key is the only missing input; staged and documented)
+- [x] Deployed, committed, anchored, and proof-verified on PUBLIC Coston2 (2026-08-14)
 
 ## Phase 5: player-facing verification (done)
 

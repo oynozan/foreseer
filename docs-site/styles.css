@@ -1,12 +1,4 @@
-/* Foreseer design system: light only */
-/* Akt is licensed; drop Akt.woff2 into docs-site/fonts/ to activate it */
-@font-face {
-    font-family: "Akt";
-    src: url("fonts/Akt.woff2") format("woff2");
-    font-weight: 300 800;
-    font-display: swap;
-}
-
+/* Foreseer design system: light only. Akt and Ubuntu load from Google Fonts */
 :root {
     --primary: #ff6200;
     --primary-soft: #ffefe5;
@@ -20,8 +12,8 @@
     --red: #d92d20;
     --red-soft: #fee4e2;
     --font-display: "Akt", "Ubuntu", system-ui, sans-serif;
-    --font-body: "Ubuntu", system-ui, sans-serif;
-    --font-mono: "Ubuntu Mono", ui-monospace, monospace;
+    --font-body: "Akt", "Ubuntu", system-ui, sans-serif;
+    --font-code: "Ubuntu", system-ui, sans-serif;
 }
 
 * {
@@ -175,7 +167,7 @@ code {
     border: 1px solid var(--line);
     padding: 1px 6px;
     border-radius: 5px;
-    font: 13.5px var(--font-mono);
+    font: 13.5px var(--font-code);
 }
 
 ol.steps {
@@ -256,7 +248,7 @@ label {
 textarea,
 input {
     width: 100%;
-    font: 13px/1.5 var(--font-mono);
+    font: 13px/1.5 var(--font-code);
     padding: 9px 11px;
     border: 1px solid var(--line);
     border-radius: 8px;

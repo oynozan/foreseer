@@ -1,11 +1,5 @@
 /* Foreseer design system for the docs: light only */
-/* Akt is licensed; drop Akt.woff2 into docs/public/fonts/ to activate it */
-@font-face {
-    font-family: "Akt";
-    src: url("/fonts/Akt.woff2") format("woff2");
-    font-weight: 300 800;
-    font-display: swap;
-}
+/* Akt loads from Google Fonts via the layout head link */
 
 :root {
     --foreseer-primary: #ff6200;
@@ -32,7 +26,7 @@ h4,
 code,
 pre,
 kbd {
-    font-family: var(--font-ubuntu-mono), "Ubuntu Mono", ui-monospace, monospace;
+    font-family: var(--font-ubuntu), "Ubuntu", system-ui, sans-serif;
 }
 
 /* Brand accent on the top of the viewport */
