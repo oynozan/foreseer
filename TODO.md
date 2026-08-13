@@ -35,14 +35,14 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Paid openEpoch() with fee split (treasury share bp plus operator balance)
 - [ ] Deploy and register on Coston2 (operator-run: funded key)
 
-## Phase 5: player-facing verification
+## Phase 5: player-facing verification (done)
 
-- [ ] Browser verify widget (six checks, all green)
-- [ ] Docs site
+- [x] Browser verify widget (docs-site/verify.html, six checks, offline in the browser)
+- [x] Docs site (docs-site/, protocol overview plus the verifier)
 
-## Phase 6: production hardening
+## Phase 6: production hardening (done)
 
-- [ ] Billing automation
-- [ ] Operator bonding contract
-- [ ] Second TEE machine
-- [ ] Production hardening pass (monitoring, key rotation, incident runbook)
+- [x] Billing automation (server /admin/billing report, price per play, per-operator)
+- [x] Operator bonding contract (OperatorBond.sol: bond, delayed withdraw, slash; 7 tests)
+- [x] Second TEE machine support (two instances with distinct identities demonstrated; siblings compose; physical second box is deployment)
+- [x] Production hardening pass (HARDENING.md runbook, rate limits, body caps, /metrics, backups)

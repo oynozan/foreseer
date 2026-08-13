@@ -1,0 +1,48 @@
+{
+  "teeId": "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf",
+  "receipt": {
+    "specVersion": 1,
+    "codeVersion": "0x6094010faf9dafee4b20d2dd6d5bc2ffcbb480ee3d8f3226c5625d5076f7a28b",
+    "epochId": 1,
+    "betId": 0,
+    "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+    "clientSeed": "alice",
+    "nonce": 0,
+    "ruleHash": "0x7939b82e6b02921475a471681eeacef7b1f41b2457e8e4898f65c113e7016a87",
+    "draws": [
+      3725
+    ],
+    "win": false,
+    "payoutBp": 0,
+    "timestamp": 1755000000
+  },
+  "signature": "0x040650963bbdc90b8ab031ca1c3c029c1fa7ae60138fbf06b65631a2155370aa0d92f1961f67878ed41e469d20306092c95587ff7045d26c032ae3915f6dae6c1c",
+  "rule": {
+    "v": 0,
+    "random": {
+      "type": "int",
+      "min": 0,
+      "max": 9999,
+      "count": 1
+    },
+    "win": {
+      "op": ">",
+      "l": {
+        "r": 0
+      },
+      "r": {
+        "c": 5000
+      }
+    },
+    "payout_bp": 19803
+  },
+  "serverSeed": "0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+  "merkleRoot": "0x6c4fd3095720b35bba7b5379fa23f575fc82b81edb2e8e4e1fabb3ec296b4c5e",
+  "proof": [
+    "0x33b89a3fcc8d413a675f2f7f6b7ec658bc44d8b5783238edbeb1ba9dca90e78a",
+    "0x574db63f5f16d6f76275ca28f1c2d54a29d1886bf33c521496f46d568a2303fd",
+    "0xcf03ae5b5f992a5457b6311ad67be5edccf0d8b9fc7098bd70634b975bcc52da",
+    "0xb906a8f3a0bd7751442143a59697cb5dc09484c1df899752cdfe373d447a7d63"
+  ]
+}
