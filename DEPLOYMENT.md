@@ -132,48 +132,100 @@ pm2 save && pm2 startup
 
 ## 7. nginx
 
+Both sites are Next.js apps, so nginx serves their build output and static
+files straight from disk and only forwards real requests to node. Writing
+them as a plain `proxy_pass` works but pushes every icon and script through
+the node process for no reason, and drops websocket support.
+
+Three things every Next block below needs: an `alias` for `/_next/static`
+with a long cache (those filenames are content hashed, so they can never go
+stale), `proxy_http_version 1.1` with the `Upgrade` headers, and a `root`
+pointing at `public/` so brand assets never reach node.
+
 ```nginx
 # /etc/nginx/sites-available/foreseer.net
 server {
     listen 80;
     server_name foreseer.net www.foreseer.net;
+
+    # web/public: favicon, logos, the verifier bundle
+    root /srv/foreseer/web/public;
+
+    # Hashed build output, immutable by construction
+    location /_next/static/ {
+        alias /srv/foreseer/web/.next/static/;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # A file in public/ wins, everything else is the app
     location / {
+        try_files $uri @next;
+        add_header Cache-Control "public, max-age=3600";
+    }
+
+    location @next {
         proxy_pass http://127.0.0.1:3000;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_cache_bypass $http_upgrade;
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
 ```
-
-```nginx
-# /etc/nginx/sites-available/api.foreseer.net
-server {
-    listen 80;
-    server_name api.foreseer.net;
-    client_max_body_size 128k;
-
-    location / {
-        proxy_pass http://127.0.0.1:8787;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-}
-```
-
-`X-Forwarded-For` is not optional here: the server rate limits
-uncredentialed reads per client address and would otherwise see every
-visitor as nginx and throttle them as one.
 
 ```nginx
 # /etc/nginx/sites-available/docs.foreseer.net
 server {
     listen 80;
     server_name docs.foreseer.net;
+
+    root /srv/foreseer/docs/public;
+
+    location /_next/static/ {
+        alias /srv/foreseer/docs/.next/static/;
+        access_log off;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
     location / {
+        try_files $uri @next;
+    }
+
+    location @next {
         proxy_pass http://127.0.0.1:3001;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_cache_bypass $http_upgrade;
         proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+The API serves no static files, so it stays a straight proxy. It does need
+`X-Forwarded-For`: the server rate limits uncredentialed reads per client
+address and would otherwise see every visitor as nginx and throttle them as
+one.
+
+```nginx
+# /etc/nginx/sites-available/api.foreseer.net
+server {
+    listen 80;
+    server_name api.foreseer.net;
+
+    # The server caps bodies at 64 KiB itself
+    client_max_body_size 128k;
+
+    location / {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
         proxy_set_header X-Forwarded-Proto $scheme;
     }
 }
@@ -188,12 +240,25 @@ server {
     # Flare providers post cosigned instructions here
     location / {
         proxy_pass http://127.0.0.1:6674;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
         proxy_set_header Host $host;
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_read_timeout 120s;
     }
 }
 ```
+
+nginx runs as `www-data` and must be able to read the build output, so keep
+`/srv` traversable:
+
+```sh
+sudo chmod o+x /srv /srv/foreseer /srv/foreseer/web /srv/foreseer/docs
+```
+
+Rebuilding a site replaces `.next/static`, so reload nginx after a deploy if
+you ever enable file caching.
 
 ```sh
 cd /etc/nginx/sites-available
@@ -206,7 +271,12 @@ sudo certbot --nginx -d foreseer.net -d www.foreseer.net \
     -d api.foreseer.net -d docs.foreseer.net -d tee.foreseer.net
 ```
 
-Certbot rewrites the blocks for TLS and installs its own renewal timer.
+Write the blocks as plain `listen 80` above. Certbot edits each one in
+place, swapping in `listen 443 ssl` with its own `ssl_certificate`,
+`ssl_certificate_key`, `options-ssl-nginx.conf` and `ssl_dhparam` lines, and
+adds a port 80 block that redirects to HTTPS. It also installs a renewal
+timer, so the finished files carry the usual `# managed by Certbot`
+comments and you never hand-write the TLS section.
 
 ## 8. The TEE machine
 
