@@ -22,12 +22,17 @@ async function bootstrap(): Promise<void> {
     const chainRpc = process.env.FORESEER_CHAIN_RPC ?? "https://coston2-api.flare.network/ext/C/rpc";
     const treasury = process.env.FORESEER_TREASURY;
 
-    if (adminKey === "dev-admin-key") {
-        console.warn("WARNING: using the default admin key, set FORESEER_ADMIN_KEY");
+    // Dev defaults are public knowledge, refuse them unless asked for
+    const allowDevDefaults = process.env.FORESEER_ALLOW_DEV_DEFAULTS === "1";
+    const insecure: string[] = [];
+    if (adminKey === "dev-admin-key") insecure.push("FORESEER_ADMIN_KEY is the published default");
+    if (privateKey === undefined) insecure.push("FORESEER_TEE_KEY is unset, receipts would be signed by the public reference key");
+    if (insecure.length > 0 && !allowDevDefaults) {
+        for (const problem of insecure) console.error(`REFUSING TO START: ${problem}`);
+        console.error("Set the variables above, or FORESEER_ALLOW_DEV_DEFAULTS=1 for a throwaway local run.");
+        process.exit(1);
     }
-    if (privateKey === undefined) {
-        console.warn("WARNING: using the public reference test key, set FORESEER_TEE_KEY");
-    }
+    for (const problem of insecure) console.warn(`WARNING: ${problem}`);
     if (treasury === undefined) {
         console.warn("WARNING: FORESEER_TREASURY unset, wallet topups disabled");
     }
