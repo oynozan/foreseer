@@ -222,6 +222,17 @@ body::before {
     }
 }
 
+.fade-in {
+    animation: fadein 0.2s ease-out;
+}
+
+@keyframes fadein {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+}
+
 .chip {
     display: inline-flex;
     align-items: center;

@@ -1,4 +1,5 @@
 import Band from "@/components/Band";
+import CodeShowcase from "@/components/CodeShowcase";
 import { CoinflipDemo, DiceDemo, RouletteDemo } from "@/components/Demos";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -19,7 +20,9 @@ export default function Home() {
                 <Band id="demo-roulette" meta={["[ 04 / 07 ]", "GAMES // ROULETTE · RULE GRAMMAR //"]}>
                     <RouletteDemo />
                 </Band>
-                <Band id="code" meta={["[ 05 / 07 ]", "INTEGRATE // THREE WAYS IN //"]} />
+                <Band id="code" meta={["[ 05 / 07 ]", "INTEGRATE // THREE WAYS IN //"]}>
+                    <CodeShowcase />
+                </Band>
                 <Band id="how-it-works" meta={["[ 06 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]} />
                 <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]} />
             </main>
