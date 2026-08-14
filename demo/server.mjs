@@ -131,8 +131,13 @@ async function proofFor(epochId, betId) {
             ok: null,
         },
         merkle: { merkleRoot: epoch.json.merkleRoot, proof: null, receiptCount: epoch.json.receiptCount, ok: null },
+        closesAt: null,
     };
-    if (!closed) return { status: 200, json: out };
+    if (!closed) {
+        const current = await apiRaw("GET", "/epochs/current");
+        if (current.status === 200 && current.json.epochId === epochId) out.closesAt = current.json.closesAt;
+        return { status: 200, json: out };
+    }
     const serverSeed = epoch.json.serverSeed;
     out.commitment.serverSeed = serverSeed;
     out.commitment.seedHash = hashSeed(toBytes(serverSeed));

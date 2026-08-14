@@ -182,7 +182,9 @@ function section(state, title, meaning, rows, note) {
 
 function proofHtml(d) {
     const eq = (a, b) => `<b class="${a === b ? "same" : "diff"}">${a}</b> ${a === b ? "=" : "!="} <b>${b}</b>`;
-    const pending = "The secret server seed is revealed when the epoch closes. Click Verify again after the close.";
+    const pending =
+        'The secret server seed is revealed when the epoch closes: <span class="countdown">soon</span>. ' +
+        "This panel rechecks automatically.";
     const parts = [];
     parts.push(
         section(
@@ -272,17 +274,7 @@ function proofHtml(d) {
     );
 }
 
-async function runVerify(cell, spun) {
-    cell.textContent = "...";
-    let data;
-    try {
-        const res = await fetch(`/api/proof/${spun.epochId}/${spun.betId}`);
-        data = await res.json();
-        if (!res.ok) throw new Error(data.error);
-    } catch (err) {
-        renderVerify(cell, spun, `<span class="badge bad">${err.message}</span> `);
-        return;
-    }
+function renderProof(cell, spun, data) {
     const badge = (name, ok) => `<span class="badge ${ok ? "" : "bad"}">${name} ${ok ? "✓" : "✗"}</span>`;
     let html = badge("signature", data.signer.ok);
     if (data.closed) {
@@ -296,6 +288,47 @@ async function runVerify(cell, spun) {
     proofRow.innerHTML = `<td colspan="6">${proofHtml(data)}</td>`;
     proofRow.querySelector(".hide-proof").addEventListener("click", () => proofRow.remove());
     row.after(proofRow);
+    if (!data.closed) armAutoRefresh(proofRow, cell, spun, data.closesAt);
+}
+
+// Live countdown plus a steady poll until the reveal lands
+function armAutoRefresh(proofRow, cell, spun, closesAt) {
+    let nextPoll = Math.floor(Date.now() / 1000) + 10;
+    const timer = setInterval(async () => {
+        if (!proofRow.isConnected) return clearInterval(timer);
+        const now = Math.floor(Date.now() / 1000);
+        if (closesAt) {
+            const left = closesAt - now;
+            proofRow.querySelectorAll(".countdown").forEach((el) => {
+                el.textContent = left > 0 ? `in ${left}s` : "any moment now";
+            });
+        }
+        if (now < nextPoll) return;
+        nextPoll = now + 10;
+        try {
+            const res = await fetch(`/api/proof/${spun.epochId}/${spun.betId}`);
+            if (!res.ok) return;
+            const fresh = await res.json();
+            if (fresh.closed) {
+                clearInterval(timer);
+                renderProof(cell, spun, fresh);
+            }
+        } catch {}
+    }, 1000);
+}
+
+async function runVerify(cell, spun) {
+    cell.textContent = "...";
+    let data;
+    try {
+        const res = await fetch(`/api/proof/${spun.epochId}/${spun.betId}`);
+        data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+    } catch (err) {
+        renderVerify(cell, spun, `<span class="badge bad">${err.message}</span> `);
+        return;
+    }
+    renderProof(cell, spun, data);
 }
 
 for (const button of document.querySelectorAll(".bet")) {
