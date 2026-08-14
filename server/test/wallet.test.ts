@@ -224,11 +224,42 @@ describe("owner dashboard data", () => {
         expect((await call("GET", "/billing/me", undefined, { "x-owner-token": "fst_bogus" })).status).toBe(401);
     });
 
-    it("404s for wallets tied to nothing", async () => {
+    it("lets a wallet with no service in, with an empty list", async () => {
         const res = await login(STRANGER, STRANGER_KEY);
         const me = await call("GET", "/billing/me", undefined, { "x-owner-token": res.json.token });
-        expect(me.status).toBe(404);
-        expect(me.json).toEqual({ error: "no Foreseer service tied to this wallet" });
+        expect(me.status).toBe(200);
+        expect(me.json.wallet).toBe(STRANGER);
+        expect(me.json.operators).toEqual([]);
+    });
+
+    it("self serves an operator for the connected wallet", async () => {
+        const session = await login(STRANGER, STRANGER_KEY);
+        const token = session.json.token;
+
+        expect((await call("POST", "/billing/operators", {})).status).toBe(401);
+
+        const made = await call("POST", "/billing/operators", {}, { "x-owner-token": token });
+        expect(made.status).toBe(201);
+        expect(made.json.ownerWallet).toBe(STRANGER);
+        expect(made.json.apiKey).toMatch(/^fsk_[0-9a-f]{48}$/);
+
+        // the fresh key works and the dashboard now shows the service
+        const bal = await call("GET", "/billing/balance", undefined, { "x-api-key": made.json.apiKey });
+        expect(bal.status).toBe(200);
+        const me = await call("GET", "/billing/me", undefined, { "x-owner-token": token });
+        expect(me.json.operators.length).toBe(1);
+        expect(me.json.operators[0].name).toBe(made.json.name);
+    });
+
+    it("caps self serve at five services per wallet", async () => {
+        const session = await login(STRANGER, STRANGER_KEY);
+        const token = session.json.token;
+        for (let i = 0; i < 4; i++) {
+            expect((await call("POST", "/billing/operators", {}, { "x-owner-token": token })).status).toBe(201);
+        }
+        const sixth = await call("POST", "/billing/operators", {}, { "x-owner-token": token });
+        expect(sixth.status).toBe(409);
+        expect(sixth.json).toEqual({ error: "this wallet already has 5 services" });
     });
 
     it("returns full service data for the owner wallet", async () => {

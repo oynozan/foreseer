@@ -126,6 +126,8 @@ export default function Dashboard() {
     const { address: account } = useAccount();
     const { signMessageAsync } = useSignMessage();
     const [session, setSession] = useState<Session>(EMPTY);
+    const [issued, setIssued] = useState<{ name: string; apiKey: string } | null>(null);
+    const [creating, setCreating] = useState(false);
     const started = useRef<string | undefined>(undefined);
 
     // a session belongs to one wallet, switching clears it
@@ -183,6 +185,35 @@ export default function Dashboard() {
         void signIn(account);
     }, [account, signIn]);
 
+    const createService = useCallback(async () => {
+        if (!account) return;
+        const wallet = account.toLowerCase();
+        const token = readToken(wallet);
+        if (!token) return;
+        setCreating(true);
+        try {
+            const res = await fetch(`${API}/billing/operators`, {
+                method: "POST",
+                headers: { "content-type": "application/json", "x-owner-token": token },
+                body: JSON.stringify({}),
+            });
+            const json = await res.json();
+            if (!res.ok) throw new Error(json.error ?? "could not create the service");
+            setIssued({ name: json.name, apiKey: json.apiKey });
+            const data = await getJson("/billing/me", { "x-owner-token": token });
+            if (data.status === 200) {
+                setSession({ addr: account, phase: "loaded", error: "", me: data.json as MeResponse });
+            }
+        } catch (err) {
+            setSession((prev) => ({
+                ...prev,
+                error: err instanceof Error ? err.message : "could not create the service",
+            }));
+        } finally {
+            setCreating(false);
+        }
+    }, [account]);
+
     const connected = account !== undefined;
     const retry = () => {
         if (!account) return;
@@ -208,9 +239,12 @@ export default function Dashboard() {
                                 <strong className="font-medium text-ink">{flr(me.pricePerPlayWei)} C2FLR</strong>
                             </span>
                         </div>
-                        {me.operators.map((op) => (
-                            <Operator key={op.operatorId} op={op} />
-                        ))}
+                        {issued && <IssuedKey issued={issued} onDismiss={() => setIssued(null)} />}
+                        {me.operators.length === 0 ? (
+                            <FirstService onCreate={createService} busy={creating} error={session.error} />
+                        ) : (
+                            me.operators.map((op) => <Operator key={op.operatorId} op={op} />)
+                        )}
                     </>
                 ) : (
                     <>
@@ -245,6 +279,51 @@ export default function Dashboard() {
                 )}
             </main>
         </div>
+    );
+}
+
+function FirstService({ onCreate, busy, error }: { onCreate: () => void; busy: boolean; error: string }) {
+    return (
+        <section className="card mt-12 p-8 text-center">
+            <h2 className="text-xl font-medium tracking-[-0.01em]">Create your first service</h2>
+            <p className="mx-auto mt-3 max-w-md text-[14px] leading-relaxed text-muted">
+                This wallet owns nothing yet. Creating a service issues one API key, bound to this wallet, that your
+                backend uses to play. You top it up from this same wallet.
+            </p>
+            <button onClick={onCreate} disabled={busy} className={`${PRIMARY} mt-6`}>
+                {busy ? "Creating..." : "Create service"}
+            </button>
+            {error && <p className="mt-4 text-[13px] text-red">{error}</p>}
+        </section>
+    );
+}
+
+function IssuedKey({ issued, onDismiss }: { issued: { name: string; apiKey: string }; onDismiss: () => void }) {
+    return (
+        <section className="mt-12 rounded-card border border-primary bg-primary-soft p-6">
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+                <h2 className="text-[17px] font-medium">Your API key for {issued.name}</h2>
+                <span className="tech text-[11px] text-primary">SHOWN ONCE //</span>
+            </div>
+            <p className="mt-2 text-[13px] leading-relaxed text-muted">
+                Copy it now. We store only its hash, so it cannot be shown again. Keep it on your server, never in a
+                browser.
+            </p>
+            <div className="mt-4 flex flex-wrap items-center gap-3">
+                <code className="grow rounded-chip border border-line bg-white px-3 py-2 text-[13px]" style={mono}>
+                    {issued.apiKey}
+                </code>
+                <button
+                    onClick={() => void navigator.clipboard?.writeText(issued.apiKey)}
+                    className={`${PILL} border border-line bg-white text-ink hover:border-ink`}
+                >
+                    Copy
+                </button>
+                <button onClick={onDismiss} className={`${PILL} text-muted hover:text-ink`}>
+                    I saved it
+                </button>
+            </div>
+        </section>
     );
 }
 

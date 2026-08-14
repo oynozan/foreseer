@@ -133,10 +133,21 @@ curl -X POST localhost:8787/auth/login \
 | POST | `/auth/login` | none | verifies the signature, returns a session token |
 | POST | `/billing/topup` | `x-api-key` | credit a verified treasury payment by tx hash |
 | GET | `/billing/balance` | `x-api-key` | plays, deposited, spent, and balance in wei |
-| GET | `/billing/me` | `x-owner-token` | everything tied to the wallet: per-operator stats, deposits, recent plays |
+| POST | `/billing/operators` | `x-owner-token` | self serve: create a service owned by the connected wallet, returns the key once, max 5 per wallet |
+| GET | `/billing/me` | `x-owner-token` | everything tied to the wallet: per-operator stats, deposits, recent plays, empty list if none yet |
 
-The user dashboard in `web/` is exactly this flow: connect wallet, sign the
-nonce, read `/billing/me`.
+A wallet with no service is not an error: `/billing/me` returns an empty
+`operators` list, and the wallet can provision itself in one call.
+
+```sh
+curl -X POST localhost:8787/billing/operators \
+  -H "x-owner-token: fst_..." -H "content-type: application/json" -d '{}'
+# {"id":2,"name":"service-40d76fde-1","ownerWallet":"0x40d7...13a0","apiKey":"fsk_..."}
+```
+
+The key is shown once and stored only as a SHA-256 hash. The dashboard in
+`web/` is exactly this flow: connect wallet, sign the nonce, read
+`/billing/me`, and create a service if the list is empty.
 
 ## Administration
 

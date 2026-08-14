@@ -494,15 +494,45 @@ export class BillingController {
         };
     }
 
-    @Get("me")
-    me(@Req() req: ApiRequest) {
+    private walletOf(req: ApiRequest): string {
         const token = req.headers["x-owner-token"];
         const wallet = typeof token === "string" ? this.sessions.walletFor(token) : null;
         if (wallet === null) throw new ApiError(401, "wallet login required");
+        return wallet;
+    }
+
+    // Self serve: a connected wallet provisions its own operator
+    @Post("operators")
+    createForWallet(@Req() req: ApiRequest, @Body() body: unknown) {
+        const wallet = this.walletOf(req);
+        const raw = (body as { name?: unknown })?.name;
+        const owned = (
+            this.db.prepare("SELECT COUNT(*) AS c FROM operators WHERE owner_wallet = ?").get(wallet) as { c: number }
+        ).c;
+        if (owned >= 5) throw new ApiError(409, "this wallet already has 5 services");
+        const name = raw === undefined ? `service-${wallet.slice(2, 10)}-${owned + 1}` : raw;
+        if (typeof name !== "string" || name.length < 1 || name.length > 64) {
+            throw new ApiError(400, "name must be a 1..64 char string");
+        }
+        const apiKey = `fsk_${randomBytes(24).toString("hex")}`;
+        const keyHash = createHash("sha256").update(apiKey, "utf8").digest("hex");
+        try {
+            this.db
+                .prepare("INSERT INTO operators (name, api_key_hash, created_at, owner_wallet) VALUES (?, ?, ?, ?)")
+                .run(name, keyHash, Math.floor(Date.now() / 1000), wallet);
+        } catch {
+            throw new ApiError(409, "operator name already exists");
+        }
+        const row = this.db.prepare("SELECT * FROM operators WHERE api_key_hash = ?").get(keyHash) as OperatorRow;
+        return { id: row.id, name: row.name, ownerWallet: wallet, apiKey };
+    }
+
+    @Get("me")
+    me(@Req() req: ApiRequest) {
+        const wallet = this.walletOf(req);
         const rows = this.db
             .prepare("SELECT * FROM operators WHERE owner_wallet = ? ORDER BY id")
             .all(wallet) as unknown as OperatorRow[];
-        if (rows.length === 0) throw new ApiError(404, "no Foreseer service tied to this wallet");
         const operators = rows.map((operator) => {
             const stats = this.db
                 .prepare(
