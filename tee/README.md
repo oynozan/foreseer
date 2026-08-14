@@ -85,8 +85,29 @@ The golden epoch is anchored on the public network: `commitEpoch` tx
 `0xee82feb5...28b2d5`, `anchorEpoch` tx `0x293c0e32...d2529f` (the contract
 verified the golden TEE close signature via ecrecover on chain id 114), and
 `verifyReceiptInclusion` answers true for golden receipt 0 over public RPC.
-An operator bond of 1 C2FLR is active. Remaining: extension registration in
-the Flare registry via the scaffold pipeline below.
+An operator bond of 1 C2FLR is active.
+
+## Flare registry registration (live)
+
+Registered 2026-08-14 in the `FlareTeeManager` diamond at
+`0x1a9C4A0f9D76c0b1D91d22E24E573a9b377618aE` via `scripts/pre-build.sh`:
+
+| Item | Value |
+| --- | --- |
+| EXTENSION_ID | `0x00000000000000000000000000000000000000000000000000000000000102c2` (66242) |
+| Scaffold InstructionSender | `0xC2268A60E73a330a57530eA8620C53A95b00731B` |
+
+`config/extension.env` (gitignored) carries the same values for the scripts.
+`tools/cmd/query-tee -ext 0x...0102c2` confirms the extension over public RPC
+(zero active TEE machines until a Confidential Space VM is attached).
+
+Remaining hand-off (needs infrastructure outside this repo): deploy the
+release image on a GCP Confidential Space VM with
+`INITIAL_OWNER`, `CHAIN_URL`, `EXTENSION_ID`, `PROXY_URL` and `MODE=0`,
+receive the public proxy URL, set `EXT_PROXY_URL` in `.env.coston2`, then run
+`scripts/post-build.sh` (allow-tee-version, governance, register-tee with
+real FTDC attestation). See [docs/deployment-steps.md](docs/deployment-steps.md)
+steps 6 to 9.
 
 ## Coston2 pipeline
 

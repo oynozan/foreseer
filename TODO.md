@@ -26,7 +26,9 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 - [x] Match every golden vector in spec/vectors/ exactly
 - [x] Run with SIMULATED_TEE locally (extension server plus smoke client)
 - [x] Docker image builds and boots; full chain leg executed on a chain-114 EVM
-- [x] Coston2 live: image built, contracts deployed, golden epoch anchored (registration via scaffold pipeline pending)
+- [x] Coston2 live: image built, contracts deployed, golden epoch anchored
+- [x] Extension registered in the Flare registry: id 0x102c2, scaffold sender 0xC2268A60E73a330a57530eA8620C53A95b00731B
+- [ ] TEE machine registration (needs a GCP Confidential Space VM plus Flare FTDC hand-off)
 
 ## Phase 4: contracts
 

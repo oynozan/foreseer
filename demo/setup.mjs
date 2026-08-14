@@ -1,12 +1,19 @@
 import { writeFileSync } from "node:fs";
 import { JsonRpcProvider, Wallet, formatEther, parseEther } from "ethers";
-import { api, cfg, envPath } from "./config.mjs";
+import { api, apiRaw, cfg, envPath } from "./config.mjs";
 
 const wallet = cfg.walletKey ? new Wallet(cfg.walletKey) : Wallet.createRandom();
 const ownerWallet = wallet.address.toLowerCase();
 const name = `roulette-demo-${ownerWallet.slice(2, 10)}`;
 
 let operatorKey = cfg.operatorKey;
+if (operatorKey !== undefined) {
+    const check = await apiRaw("GET", "/billing/balance", undefined, { "x-api-key": operatorKey });
+    if (check.status === 401) {
+        console.log("stored operator key rejected by this server, re-provisioning");
+        operatorKey = undefined;
+    }
+}
 if (operatorKey === undefined) {
     const created = await api("POST", "/admin/operators", { name, ownerWallet }, { "x-admin-key": cfg.adminKey });
     operatorKey = created.apiKey;
