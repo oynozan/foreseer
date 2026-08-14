@@ -23,9 +23,16 @@ were dropped; Foreseer is Go only.
 - `go/cmd/foreseer-smoke/`: dev client that drives a running extension with
   real TEE-node wire actions.
 
-SIMULATED_TEE: the extension signs with `FORESEER_TEE_KEY` (hex env var). When
-unset it warns and uses the public reference test key from SPEC section 9.1.
-Real enclave key handling arrives with attestation on actual FCC hardware.
+Receipt identity: the extension signs with `FORESEER_TEE_KEY` (hex env var).
+Unset, it falls back to the public reference test key from SPEC section 9.1,
+which is allowed on the 31337 devnet only. On any other `CHAIN_ID` the
+extension refuses to start, because that key is public and anyone holding it
+can forge receipts and epoch closes.
+
+The key's address must equal the `teeId` the `ForeseerInstructionSender` was
+deployed with, or `anchorEpoch` reverts. This is deliberately not the
+tee-node attestation key: that one is regenerated on every restart, and the
+contract's `teeId` is fixed at construction.
 
 ## Contracts (Phase 4)
 
@@ -51,7 +58,15 @@ go test ./...
 ```
 
 Windows note: the conformance harness needs a jq whose stdout is LF. The
-winget jq emits CRLF; wrap it (`jq "$@" | tr -d '\r'`) or run under WSL.
+winget jq emits CRLF, which makes every fixture pass without being checked.
+Wrap it, but keep jq's exit status or `jq -e` conditionals always read true
+and the suite goes green while comparing nothing:
+
+```sh
+#!/usr/bin/env bash
+set -o pipefail
+/path/to/jq.exe "$@" | tr -d '\015'
+```
 
 ## Docker image
 
@@ -110,9 +125,15 @@ Release image (reproducible, SOURCE_DATE_EPOCH from the last root commit):
 | Hand-off tar | `foreseer-tee-v0.1.0.tar` (gitignored) |
 | MODE | `1` baked, `MODE` is in `tee.launch_policy.allow_env_override`, launch with `MODE=0` |
 
+STALE: that digest predates the launch-policy fix. The v0.1.0 image cannot
+receive `CHAIN_ID`, `GOVERNANCE_SIGNERS`, `GOVERNANCE_THRESHOLD` or
+`FORESEER_TEE_KEY` on a Confidential Space VM, which leaves `chainID=0` and
+empty signatures. Rebuild before any real-hardware deploy.
+
 Remaining hand-off (needs infrastructure outside this repo): deploy the
 release image on a GCP Confidential Space VM with
-`INITIAL_OWNER`, `CHAIN_URL`, `EXTENSION_ID`, `PROXY_URL` and `MODE=0`,
+`INITIAL_OWNER`, `CHAIN_URL`, `EXTENSION_ID`, `PROXY_URL`, `CHAIN_ID`,
+`FORESEER_TEE_KEY` and `MODE=0`,
 receive the public proxy URL, set `EXT_PROXY_URL` in `.env.coston2`, then run
 `scripts/post-build.sh` (allow-tee-version, governance, register-tee with
 real FTDC attestation). See [docs/deployment-steps.md](docs/deployment-steps.md)

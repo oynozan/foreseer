@@ -19,12 +19,28 @@ import (
 	teeutils "github.com/flare-foundation/tee-node/pkg/utils"
 )
 
-// SIMULATED_TEE: key from env, reference test key as dev default
+// public test key is allowed on the devnet only
+const devnetChainID = "31337"
+
+func foreseerKeyHex(getenv func(string) string) (string, error) {
+	keyHex := strings.TrimPrefix(getenv("FORESEER_TEE_KEY"), "0x")
+	if keyHex != "" {
+		return keyHex, nil
+	}
+	chainID := strings.TrimSpace(getenv("CHAIN_ID"))
+	if chainID != "" && chainID != devnetChainID {
+		return "", fmt.Errorf("FORESEER_TEE_KEY is required on chain %s: the reference key is public and forgeable", chainID)
+	}
+	return engine.ReferenceTestKeyHex, nil
+}
+
 func newForeseerTee() *engine.ReferenceTee {
-	keyHex := strings.TrimPrefix(os.Getenv("FORESEER_TEE_KEY"), "0x")
-	if keyHex == "" {
-		keyHex = engine.ReferenceTestKeyHex
-		logger.Warnf("FORESEER_TEE_KEY not set, using the public reference test key (SIMULATED_TEE)")
+	keyHex, err := foreseerKeyHex(os.Getenv)
+	if err != nil {
+		logger.Fatalf("%v", err)
+	}
+	if keyHex == engine.ReferenceTestKeyHex {
+		logger.Warnf("FORESEER_TEE_KEY not set, using the public reference test key (devnet only)")
 	}
 	tee, err := engine.NewReferenceTee(engine.ReferenceTeeOptions{PrivateKeyHex: keyHex})
 	if err != nil {

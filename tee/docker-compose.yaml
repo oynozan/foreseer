@@ -18,6 +18,8 @@ services:
     ports:
       - "${EXT_PROXY_INTERNAL_BIND:-0.0.0.0:6673}:6663"
       - "${EXT_PROXY_EXTERNAL_BIND:-0.0.0.0:6674}:6664"
+      # /ready reports indexer freshness, operator check only
+      - "${EXT_PROXY_READY_BIND:-127.0.0.1:6671}:6661"
     depends_on:
       - redis
 
@@ -53,6 +55,8 @@ services:
       - EXTENSION_PORT=7702
       - LOG_LEVEL=${LOG_LEVEL:-INFO}
       - SIMULATED_TEE=${SIMULATED_TEE:-true}
+      # Foreseer receipt identity. Required off the devnet, see internal/extension/foreseer.go
+      - FORESEER_TEE_KEY=${FORESEER_TEE_KEY:-}
     depends_on:
       - ext-proxy
 

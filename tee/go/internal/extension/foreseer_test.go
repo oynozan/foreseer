@@ -136,6 +136,40 @@ func TestForeseerRejectsBadInput(t *testing.T) {
 	}
 }
 
+func TestForeseerKeyHex(t *testing.T) {
+	realKey := strings.Repeat("11", 32)
+	cases := []struct {
+		name    string
+		env     map[string]string
+		want    string
+		wantErr bool
+	}{
+		{"explicit key on a public chain", map[string]string{"FORESEER_TEE_KEY": "0x" + realKey, "CHAIN_ID": "114"}, realKey, false},
+		{"devnet falls back to the test key", map[string]string{"CHAIN_ID": "31337"}, engine.ReferenceTestKeyHex, false},
+		{"unset chain falls back to the test key", map[string]string{}, engine.ReferenceTestKeyHex, false},
+		{"coston2 without a key is refused", map[string]string{"CHAIN_ID": "114"}, "", true},
+		{"coston without a key is refused", map[string]string{"CHAIN_ID": " 16 "}, "", true},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			got, err := foreseerKeyHex(func(k string) string { return c.env[k] })
+			if c.wantErr {
+				if err == nil {
+					t.Fatalf("public test key accepted on chain %q", c.env["CHAIN_ID"])
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+			if got != c.want {
+				t.Fatalf("key = %s, want %s", got, c.want)
+			}
+		})
+	}
+}
+
 func mustHex(t *testing.T, s string) []byte {
 	t.Helper()
 	b, err := hex.DecodeString(strings.TrimPrefix(s, "0x"))
