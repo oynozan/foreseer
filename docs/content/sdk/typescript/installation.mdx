@@ -33,6 +33,8 @@ console.log("it works, rolled:", bet.receipt.draws[0]);
 The package is bundler-friendly (no Node builtins in the consensus or
 verify paths). Bundle it with esbuild, Vite, or webpack as usual; the
 hosted verifier widget is exactly this package compiled to a 58 kB IIFE.
+In this repo `web/scripts/build-widget.mjs` writes that bundle to
+`web/public/foreseer-widget.js`.
 
 ## From source
 

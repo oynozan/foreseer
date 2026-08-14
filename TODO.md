@@ -41,8 +41,8 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 
 ## Phase 5: player-facing verification (done)
 
-- [x] Browser verify widget (docs-site/verify.html, six checks, offline in the browser)
-- [x] Docs site (docs-site/, protocol overview plus the verifier)
+- [x] Browser verify widget (web/ at /verify, six checks, offline in the browser)
+- [x] Docs site (docs/, protocol overview plus the SDK and API reference)
 
 ## Phase 6: production hardening (done)
 

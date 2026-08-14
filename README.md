@@ -23,7 +23,9 @@ implementations must match exactly.
 | `packages/ts` | npm package `foreseer-sdk`: core, verifier, ReferenceTee. Git submodule |
 | `server/` | Orchestration service: epochs, SQLite receipt store, verify API (Phase 2) |
 | `tee/` | Go FCE extension, engine matching the vectors, contracts (Phases 3 and 4) |
-| `docs-site/` | Docs site and the browser receipt verifier (Phase 5) |
+| `docs/` | Documentation site (Phase 5) |
+| `web/` | Next.js app: marketing site, the browser receipt verifier at `/verify`, operator dashboard |
+| `demo/` | Demo casino: p5 roulette frontend, operator backend, receipt checks, wallet topups |
 | `HARDENING.md` | Production hardening runbook (Phase 6) |
 | `TODO.md` | Whole-project MVP roadmap |
 
