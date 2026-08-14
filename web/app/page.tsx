@@ -1,5 +1,6 @@
 import Band from "@/components/Band";
 import Footer from "@/components/Footer";
+import Hero from "@/components/Hero";
 import Nav from "@/components/Nav";
 
 export default function Home() {
@@ -7,11 +8,7 @@ export default function Home() {
         <div className="frame">
             <Nav />
             <main>
-                <Band id="hero" meta={["[ 01 / 07 ]", "PROTOCOL // COMMIT BEFORE BET //"]}>
-                    <h1 className="pt-16">
-                        The house locks its randomness <span className="text-primary">before you bet.</span>
-                    </h1>
-                </Band>
+                <Hero />
                 <Band id="demo-dice" meta={["[ 02 / 07 ]", "GAMES // DICE · DRAW 0..9999 //"]} />
                 <Band id="demo-coinflip" meta={["[ 03 / 07 ]", "GAMES // COINFLIP · ONE BIT //"]} />
                 <Band id="demo-roulette" meta={["[ 04 / 07 ]", "GAMES // ROULETTE · RULE GRAMMAR //"]} />
