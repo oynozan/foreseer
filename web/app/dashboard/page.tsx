@@ -390,7 +390,7 @@ const MASK = "*****";
 // locked preview, real labels and masked values
 function LockedPreview() {
     return (
-        <div aria-hidden="true" className="pointer-events-none mt-16 select-none opacity-40">
+        <div data-locked-preview aria-hidden="true" className="pointer-events-none mt-16 select-none opacity-40">
             <div className="flex flex-wrap items-baseline justify-between gap-2 border-b border-line pb-4">
                 <h2 className="text-xl font-medium tracking-[-0.01em]">{MASK}</h2>
                 <span className="tech text-[11px] text-muted">operator #{MASK}</span>
