@@ -69,7 +69,7 @@ export default function Faq() {
     return (
         <div className="pt-12">
             <h2 className="text-center text-[clamp(28px,3.2vw,40px)] font-medium leading-[1.1] tracking-[-0.02em]">
-                Guarantees, stated <span className="text-primary">honestly.</span>
+                Your <span className="text-primary">questions</span>, probably
             </h2>
             <div className="mt-10 grid gap-x-14 md:grid-cols-2">
                 {cols.map((col, c) => (
