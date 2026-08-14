@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useState } from "react";
+import Nav from "@/components/Nav";
 
 const API = process.env.NEXT_PUBLIC_FORESEER_API ?? "http://localhost:8787";
 
@@ -110,37 +110,36 @@ export default function Dashboard() {
 
     return (
         <div className="frame min-h-screen">
-            <header className="band">
-                <div className="col flex h-16 items-center justify-between">
-                    <Link href="/" className="flex items-center">
-                        <img src="/text-logo.svg" alt="Foreseer" className="h-8 w-auto" />
-                    </Link>
-                    <span className="tech text-[11px] text-muted">Operator dashboard</span>
-                </div>
-            </header>
+            <Nav
+                action={
+                    <button
+                        onClick={connect}
+                        disabled={phase === "connecting"}
+                        className="rounded-full bg-primary px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
+                    >
+                        {phase === "connecting" ? "Waiting for wallet..." : "Connect wallet"}
+                    </button>
+                }
+            />
             <main className="col pb-24 pt-12">
                 {phase !== "loaded" && (
-                    <div className="mx-auto max-w-xl text-center">
-                        <h1 className="text-4xl font-bold">Your Foreseer service</h1>
-                        <p className="mt-4 text-muted">
-                            Sign in with the wallet that pays for your epochs. If a Foreseer service is tied to it, every
-                            deposit, play, and balance shows up here.
-                        </p>
-                        <button
-                            onClick={connect}
-                            disabled={phase === "connecting"}
-                            className="mt-8 rounded-full bg-primary px-8 py-3 font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
-                        >
-                            {phase === "connecting" ? "Waiting for wallet..." : "Connect wallet"}
-                        </button>
-                        {phase === "untied" && (
-                            <p className="mt-6 rounded-card border border-line bg-primary-soft p-4 text-sm">
-                                This wallet is not tied to any Foreseer service. Operators get tied at signup: the owner
-                                wallet on the operator account is the one that logs in here.
+                    <>
+                        <div className="mx-auto max-w-xl text-center">
+                            <h1 className="text-4xl font-bold">Your Foreseer service</h1>
+                            <p className="mt-4 text-muted">
+                                Connect the wallet that pays for your epochs. If a Foreseer service is tied to it, every
+                                deposit, play, and balance shows up here.
                             </p>
-                        )}
-                        {phase === "error" && <p className="mt-6 text-sm text-red">{error}</p>}
-                    </div>
+                            {phase === "untied" && (
+                                <p className="mt-6 rounded-card border border-line bg-primary-soft p-4 text-sm">
+                                    This wallet is not tied to any Foreseer service. Operators get tied at signup: the
+                                    owner wallet on the operator account is the one that logs in here.
+                                </p>
+                            )}
+                            {phase === "error" && <p className="mt-6 text-sm text-red">{error}</p>}
+                        </div>
+                        <LockedPreview />
+                    </>
                 )}
                 {phase === "loaded" && me && (
                     <>
@@ -226,6 +225,74 @@ export default function Dashboard() {
                     </>
                 )}
             </main>
+        </div>
+    );
+}
+
+const MASK = "*****";
+
+// locked preview, real labels and masked values
+function LockedPreview() {
+    return (
+        <div aria-hidden="true" className="pointer-events-none mt-14 select-none opacity-45">
+            <section className="card p-6">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h3 className="text-xl font-bold">{MASK}</h3>
+                    <span className="tech text-[11px] text-muted">operator #{MASK}</span>
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <Stat label="Balance" value={`${MASK} C2FLR`} accent />
+                    <Stat label="Deposited" value={`${MASK} C2FLR`} />
+                    <Stat label="Spent" value={`${MASK} C2FLR`} />
+                    <Stat label="Price per play" value={`${MASK} C2FLR`} />
+                    <Stat label="Plays" value={MASK} />
+                    <Stat label="Player wins" value={MASK} />
+                    <Stat label="Epochs used" value={MASK} />
+                    <Stat label="Win rate" value={MASK} />
+                </div>
+                <h3 className="mt-8 font-bold">Deposits</h3>
+                <table className="mt-2 w-full text-sm">
+                    <thead>
+                        <tr className="tech text-left text-[11px] text-muted">
+                            <th className="py-2">Transaction</th>
+                            <th>Amount</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[0, 1, 2].map((i) => (
+                            <tr key={i} className="border-t border-line">
+                                <td className="keepcase tech py-2 text-[12px]">{MASK}</td>
+                                <td>{MASK} C2FLR</td>
+                                <td>{MASK}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                <h3 className="mt-8 font-bold">Recent plays</h3>
+                <table className="mt-2 w-full text-sm">
+                    <thead>
+                        <tr className="tech text-left text-[11px] text-muted">
+                            <th className="py-2">Epoch / bet</th>
+                            <th>Client seed</th>
+                            <th>Result</th>
+                            <th>Payout</th>
+                            <th>When</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {[0, 1, 2].map((i) => (
+                            <tr key={i} className="border-t border-line">
+                                <td className="tech keepcase py-2 text-[12px]">{MASK}</td>
+                                <td className="tech keepcase text-[12px]">{MASK}</td>
+                                <td>{MASK}</td>
+                                <td>{MASK}</td>
+                                <td>{MASK}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </section>
         </div>
     );
 }

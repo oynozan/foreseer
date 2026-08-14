@@ -1,14 +1,13 @@
+const FCC_URL = "https://dev.flare.network/fcc/overview";
+
 const ROWS: [string, string][] = [
     ["ATTEST", "Flare's registry binds the TEE identity to a measured code image."],
     ["EXECUTE", "Bets resolve inside the enclave and are signed with its identity key."],
     ["ANCHOR", "Every seed commitment and Merkle root lands on Coston2."],
 ];
 
-const STACK = [
-    ["/demo/flare-3.png", "-rotate-3 translate-y-6 -translate-x-4 scale-95"],
-    ["/demo/flare-2.png", "rotate-2 translate-y-3 translate-x-3 scale-[0.975]"],
-    ["/demo/flare-1.png", ""],
-];
+const SHEET = "absolute inset-0 rounded-stage border border-line shadow-[0_10px_36px_rgba(29,29,29,0.10)]";
+const EASE = "transition-transform duration-500 ease-out";
 
 export default function FlareSection() {
     return (
@@ -29,19 +28,39 @@ export default function FlareSection() {
                         </li>
                     ))}
                 </ul>
+                <a
+                    href={FCC_URL}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="group mt-6 inline-flex items-center gap-2 text-[14px] font-medium text-ink"
+                >
+                    Read the Flare Confidential Compute docs
+                    <span className="text-primary transition-transform duration-200 group-hover:translate-x-1">-&gt;</span>
+                </a>
             </div>
-            <div className="relative pb-8 pr-6" aria-label="Foreseer running on Flare Confidential Compute">
-                {STACK.map(([src, cls]) => (
-                    <img
-                        key={src}
-                        src={src}
-                        alt=""
-                        className={`rounded-stage border border-line shadow-[0_10px_36px_rgba(29,29,29,0.10)] ${cls} ${
-                            cls ? "absolute inset-0" : "relative"
-                        }`}
-                    />
-                ))}
-            </div>
+            <a
+                href={FCC_URL}
+                target="_blank"
+                rel="noreferrer"
+                aria-label="Foreseer running on Flare Confidential Compute, read the Flare docs"
+                className="group relative block px-10 pb-14 pt-6"
+            >
+                <img
+                    src="/demo/flare-3.png"
+                    alt=""
+                    className={`${SHEET} ${EASE} -translate-x-5 translate-y-9 -rotate-6 scale-95 group-hover:-translate-x-9 group-hover:translate-y-11 group-hover:-rotate-9`}
+                />
+                <img
+                    src="/demo/flare-2.png"
+                    alt=""
+                    className={`${SHEET} ${EASE} translate-x-4 translate-y-4.5 rotate-3 scale-[0.975] group-hover:translate-x-7 group-hover:translate-y-6 group-hover:rotate-5`}
+                />
+                <img
+                    src="/demo/flare-1.png"
+                    alt="The Foreseer TEE extension running on Flare Confidential Compute"
+                    className={`relative rounded-stage border border-line shadow-[0_10px_36px_rgba(29,29,29,0.10)] ${EASE} -rotate-2 group-hover:-translate-y-1.5 group-hover:rotate-0 group-hover:scale-[1.02]`}
+                />
+            </a>
         </div>
     );
 }

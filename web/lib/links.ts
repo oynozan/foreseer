@@ -1,5 +1,5 @@
 // placeholder docs host, set real URLs at deploy
-export const DOCS_BASE = "";
+export const DOCS_BASE = "https://docs.foreseer.net";
 
 export const DOCS_URL = DOCS_BASE + "/";
 export const VERIFY_URL = "/verify";

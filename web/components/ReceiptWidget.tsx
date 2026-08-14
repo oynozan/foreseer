@@ -67,9 +67,9 @@ export default function ReceiptWidget() {
     }, []);
 
     return (
-        <div className="mx-auto mt-10 max-w-2xl rounded-card border border-line bg-white/80 text-left backdrop-blur-sm">
+        <div className="mx-auto mt-12 h-100 max-w-2xl overflow-hidden rounded-card border border-line bg-white/80 text-left backdrop-blur-sm">
             <pre
-                className="keepcase overflow-x-auto px-5 py-4 text-[12.5px] leading-[1.7] text-ink"
+                className="keepcase h-full overflow-x-auto overflow-y-hidden px-5 py-4 text-[12.5px] leading-[1.7] text-ink"
                 style={{ fontFamily: "var(--font-mono)" }}
             >
                 {display === null ? (

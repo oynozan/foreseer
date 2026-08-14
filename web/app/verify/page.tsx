@@ -45,7 +45,7 @@ export default function VerifyPage() {
         <div className="frame">
             <Nav />
             <main>
-                <Band id="verify" meta={["[ VERIFY ]", "SIX CHECKS // NOTHING LEAVES THIS PAGE //"]}>
+                <Band id="verifier" meta={["[ VERIFY ]", "SIX CHECKS // NOTHING LEAVES THIS PAGE //"]}>
                     <div className="pt-12 text-center">
                         <h1 className="text-[clamp(30px,3.6vw,44px)] font-medium leading-[1.1] tracking-[-0.02em]">
                             Every check runs <span className="text-primary">in your browser.</span>

@@ -81,7 +81,13 @@ if (existsSync(htmlPath)) {
                 broken++;
             }
         } else if (url.startsWith("/") && !url.startsWith("/_next/")) {
-            const clean = url.split("?")[0];
+            const [path, hash] = url.split("#");
+            const clean = path.split("?")[0] || "/";
+            if (hash && clean === "/" && !page.includes(`id="${hash}"`)) {
+                fail("dangling anchor " + url);
+                broken++;
+                continue;
+            }
             if (clean === "/" || clean === "/icon.png") continue;
             if (existsSync(join(root, "public", clean))) continue;
             if (existsSync(join(root, ".next", "server", "app", clean + ".html"))) continue;
