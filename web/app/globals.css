@@ -1,0 +1,70 @@
+@import "tailwindcss";
+
+@theme {
+    --color-primary: #ff6200;
+    --color-primary-hover: #e65800;
+    --color-primary-soft: #ffefe5;
+    --color-mint: #d0fccd;
+    --color-mint-ink: #14532d;
+    --color-ink: #1d1d1d;
+    --color-muted: #6f6f6f;
+    --color-line: #e8e6e3;
+    --color-red: #d92d20;
+    --font-sans: var(--font-akt), var(--font-ubuntu), system-ui, sans-serif;
+    --font-tech: var(--font-ubuntu), system-ui, sans-serif;
+    --radius-card: 14px;
+    --radius-stage: 10px;
+    --radius-chip: 6px;
+}
+
+/* lattice geometry */
+:root {
+    --col-max: 1160px;
+    --rail-inset: max(16px, calc(50% - var(--col-max) / 2));
+    --tick-ink: rgba(29, 29, 29, 0.35);
+}
+
+html {
+    scroll-behavior: smooth;
+}
+
+body {
+    background: #fff;
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+}
+
+/* brand top bar */
+body::before {
+    content: "";
+    position: fixed;
+    inset: 0 0 auto 0;
+    height: 4px;
+    background: var(--color-primary);
+    z-index: 60;
+}
+
+::selection {
+    background: var(--color-mint);
+    color: var(--color-mint-ink);
+}
+
+/* technical second voice, replaces the mono register */
+.tech {
+    font-family: var(--font-tech);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    html {
+        scroll-behavior: auto;
+    }
+}
