@@ -1,7 +1,7 @@
 import { Footer, Layout, Navbar } from "nextra-theme-docs";
 import { Head } from "nextra/components";
 import { getPageMap } from "nextra/page-map";
-import { Ubuntu } from "next/font/google";
+import { Ubuntu, Ubuntu_Mono } from "next/font/google";
 import "nextra-theme-docs/style.css";
 import "./globals.css";
 
@@ -9,6 +9,12 @@ const ubuntu = Ubuntu({
     weight: ["400", "500", "700"],
     subsets: ["latin"],
     variable: "--font-ubuntu",
+});
+
+const ubuntuMono = Ubuntu_Mono({
+    weight: ["400", "700"],
+    subsets: ["latin"],
+    variable: "--font-ubuntu-mono",
 });
 
 export const metadata = {
@@ -24,7 +30,7 @@ export const metadata = {
 
 export default async function RootLayout({ children }) {
     return (
-        <html lang="en" dir="ltr" suppressHydrationWarning className={ubuntu.variable}>
+        <html lang="en" dir="ltr" suppressHydrationWarning className={`${ubuntu.variable} ${ubuntuMono.variable}`}>
             <Head color={{ hue: 23, saturation: 100, lightness: 50 }} backgroundColor={{ light: "#ffffff" }}>
                 <link rel="preconnect" href="https://fonts.googleapis.com" />
                 <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />

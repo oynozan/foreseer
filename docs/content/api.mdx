@@ -14,6 +14,7 @@ Base URL in the examples: `http://localhost:8787`.
 | none | players, verifiers | all `GET` endpoints are public |
 | `x-api-key` | game operators | issued once by `POST /admin/operators` |
 | `x-admin-key` | the service owner | `FORESEER_ADMIN_KEY` environment variable |
+| `x-owner-token` | operator owners | wallet login via `/auth/nonce` + `/auth/login` |
 
 Operator keys are 192-bit random secrets shown exactly once at creation;
 the server stores only their SHA-256 hash.
@@ -25,9 +26,14 @@ Create an operator (admin):
 ```sh
 curl -X POST localhost:8787/admin/operators \
   -H "x-admin-key: $ADMIN" -H "content-type: application/json" \
-  -d '{"name":"casino-royale"}'
-# {"id":1,"name":"casino-royale","apiKey":"fsk_0c143c38b5c04d22ae0f5b03b8601e50..."}
+  -d '{"name":"casino-royale","ownerWallet":"0x40d76fde767da97d46d6a27a750d167e4ca313a0"}'
+# {"id":1,"name":"casino-royale","ownerWallet":"0x40d7...13a0","apiKey":"fsk_0c143c38b5c04d22ae0f5b03b8601e50..."}
 ```
+
+`ownerWallet` is optional but it decides the billing mode: operators with a
+wallet are prepaid (plays are refused with a 402 once the balance is below
+the per-play price), operators without one are invoiced from the billing
+report.
 
 Register a rule (operator, idempotent by hash):
 
@@ -76,7 +82,7 @@ explicitly if you want the server to reject out-of-sequence plays with a
 
 | Method | Path | Returns |
 | --- | --- | --- |
-| GET | `/health` | `{ok, teeId, chainId}`: the TEE address to verify against |
+| GET | `/health` | `{ok, teeId, chainId, treasury}`: the TEE address to verify against, and where topups go |
 | GET | `/epochs/current` | open epoch id, `seedCommit`, timing |
 | GET | `/epochs/:id` | epoch record; `serverSeed` is `null` until the epoch closes |
 | GET | `/epochs/:id/receipts` | receipts, filter `?clientSeed=`, page with `limit` (max 1000) and `offset`, returns `total` |
@@ -90,13 +96,53 @@ client-side: fetch the epoch, the rule, and the proof, then run the checks
 yourself with `foreseer-sdk` or the browser widget; the server cannot lie to
 code it does not run.
 
+## Wallets and billing
+
+Money flows through the owner wallet. Topping up is a real chain transfer:
+send native tokens from the owner wallet to the treasury address shown by
+`/health`, then submit the transaction hash. The server verifies the
+transaction over JSON-RPC (right sender, right recipient, confirmed,
+succeeded) and credits it exactly once.
+
+```sh
+curl -X POST localhost:8787/billing/topup \
+  -H "x-api-key: $KEY" -H "content-type: application/json" \
+  -d '{"txHash":"0xa1496f63a19af9c97ab1cb1b36ef8d7271cb07b22b8e3a1efffc6ed3b6e06488"}'
+# {"creditedWei":"500000000000000000","depositedWei":"500000000000000000","spentWei":"0","balanceWei":"500000000000000000"}
+```
+
+Owners sign in with their wallet, no password and no API key. Ask for a
+nonce, sign the returned message with `personal_sign`, exchange it for a
+token:
+
+```sh
+curl "localhost:8787/auth/nonce?wallet=0x40d7...13a0"
+# {"wallet":"0x40d7...13a0","nonce":"6f1c...","message":"Foreseer wallet login\nWallet: 0x40d7...13a0\nNonce: 6f1c..."}
+
+curl -X POST localhost:8787/auth/login \
+  -H "content-type: application/json" \
+  -d '{"wallet":"0x40d7...13a0","signature":"0x..."}'
+# {"wallet":"0x40d7...13a0","token":"fst_...","expiresAt":1786770000}
+```
+
+| Method | Path | Auth | What |
+| --- | --- | --- | --- |
+| GET | `/auth/nonce?wallet=` | none | one-time login nonce and the message to sign |
+| POST | `/auth/login` | none | verifies the signature, returns a session token |
+| POST | `/billing/topup` | `x-api-key` | credit a verified treasury payment by tx hash |
+| GET | `/billing/balance` | `x-api-key` | plays, deposited, spent, and balance in wei |
+| GET | `/billing/me` | `x-owner-token` | everything tied to the wallet: per-operator stats, deposits, recent plays |
+
+The user dashboard in `web/` is exactly this flow: connect wallet, sign the
+nonce, read `/billing/me`.
+
 ## Administration
 
 | Method | Path | What |
 | --- | --- | --- |
-| POST | `/admin/operators` | create an operator, returns the key once |
+| POST | `/admin/operators` | create an operator (optional `ownerWallet`), returns the key once |
 | POST | `/admin/close` | force-close the open epoch (a scheduler also closes them on a timer) |
-| GET | `/admin/billing?from=&to=` | per-operator plays, wins, and `amountDueWei` (plays times `FORESEER_PRICE_PER_PLAY_WEI`, as a decimal string) |
+| GET | `/admin/billing?from=&to=` | every operator with wallet, plays, wins, `amountDueWei`, `depositedWei`, `balanceWei`, plus totals |
 
 ## Errors
 
@@ -116,4 +162,6 @@ logs.
 | `FORESEER_ADMIN_KEY` | dev value, warns | admin header secret |
 | `FORESEER_TEE_KEY` | reference test key, warns | receipt signing key (SIMULATED mode) |
 | `FORESEER_PLAY_LIMIT` / `FORESEER_PLAY_WINDOW_SECONDS` | 60 / 10 | per-operator rate limit on `/play` |
-| `FORESEER_PRICE_PER_PLAY_WEI` | 0 | billing price used by the report |
+| `FORESEER_PRICE_PER_PLAY_WEI` | 0 | billing price used by the report and the prepaid gate |
+| `FORESEER_TREASURY` | unset, warns | wallet that receives topups; unset disables them |
+| `FORESEER_CHAIN_RPC` | Coston2 public RPC | JSON-RPC endpoint used to verify topup transactions |

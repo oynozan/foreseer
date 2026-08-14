@@ -1,35 +1,164 @@
+import { Callout, Steps } from "nextra/components";
+
 # Examples
 
-Every example on this page is runnable as written (`tsx file.ts`), and the
-values in the comments are real outputs from the golden test seed.
+This page plays one bet from both sides of the table: the casino that runs
+the TEE, and the player who trusts nothing until it verifies. Each step is a
+few lines, and every value shown is a real output that you can reproduce.
 
-## Play a full epoch, step by step
+## One bet, start to finish
+
+All steps share this setup. The seed and the clock are pinned to the test
+constants of spec section 9, so your outputs will match this page byte for
+byte:
 
 ```ts
 import { dice, merkleProof, receiptDigest, toBytes } from "foreseer-sdk";
 import { ReferenceTee } from "foreseer-sdk/reference";
 import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "foreseer-sdk/verify";
 
-// 1. Boot a TEE and open an epoch.
-//    The seed commitment is published before any bet exists.
-const tee = new ReferenceTee();
-const { seedCommit } = tee.openEpoch();
+const goldenSeed = toBytes("0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+const tee = new ReferenceTee({ serverSeed: goldenSeed, now: () => 1755000000n });
+```
 
-// 2. Build a game rule: classic dice, win above 4999, pays 1.98x.
+<Callout type="info">
+    `ReferenceTee` is not a mock. It runs the real protocol in memory, and in production the same behavior runs inside
+    a hardware enclave. Leave `serverSeed` out and it draws a random one, which is what a real epoch does.
+</Callout>
+
+<Steps>
+
+### The casino makes a promise
+
+```ts
+const { epochId, seedCommit } = tee.openEpoch();
+// seedCommit = 0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd
+```
+
+An epoch starts with a secret: a 32-byte server seed that will drive every
+outcome. The casino does not show it. It shows the SHA-256 hash of it, the
+`seedCommit`, before any bet exists. From this moment the seed cannot be
+swapped, because the hash would no longer match.
+
+### Describe the game as data
+
+```ts
+const rule = dice({ target: 4999, mode: "over" });
+```
+
+A rule is plain JSON, not code. The `dice` preset expands to:
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 9999, "count": 1 },
+    "win": { "op": ">", "l": { "r": 0 }, "r": { "c": 4999 } },
+    "payout_bp": 19800
+}
+```
+
+Read it as: draw one integer from 0 to 9999, the player wins if the draw is
+greater than 4999, and a win pays 1.98x (19800 basis points, an exact 99
+percent return to player). The rule is hashed into every receipt, so it
+cannot be changed after the bet either.
+
+### The player places a bet
+
+```ts
+const bet = tee.play({ clientSeed: "alice", rule });
+console.log(bet.receipt.draws[0], bet.receipt.win);
+// 3725 false: not over 4999, the house wins
+```
+
+The `clientSeed` belongs to the player. It is mixed into the outcome
+derivation together with the server seed and a nonce that counts up per
+seed. The casino committed to its seed before seeing yours, and you chose
+yours yourself: neither side controls the roll alone.
+
+### Read the signed receipt
+
+The bet comes back as a receipt plus a signature. With the golden setup it
+looks like this:
+
+```json
+{
+    "epochId": 1,
+    "betId": 0,
+    "seedCommit": "0x630dcd2966c4336691125448bbb25b4ff412a49c732db2c8abc1b8581bd710dd",
+    "clientSeed": "alice",
+    "nonce": 0,
+    "ruleHash": "0xdd9d92df5a6f56bc664137373c13f866d3f7fb51fb4650ad09b85e8024779125",
+    "draws": [3725],
+    "win": false,
+    "payoutBp": 0,
+    "timestamp": 1755000000
+}
+```
+
+Everything that determined the outcome is pinned in here: which epoch and
+bet this was, which commitment was live, what the player contributed, which
+rule applied, and what came out. Two version fields (`specVersion`,
+`codeVersion`) are omitted above for brevity.
+
+### Check the signature on the spot
+
+```ts
+verifyReceiptSignature(bet, tee.domain, tee.teeId);
+// { ok: true, teeId: "0x7e5f4552091a69125d5dfcb7b8c2659029395bdf" }
+```
+
+The receipt is EIP-712 hashed and the 65-byte signature must recover the
+TEE's address. Always pass the expected `teeId`: a forged receipt can carry
+a valid-looking signature from some other key, and only the address
+comparison catches that. This check needs no reveal, it works the moment
+the receipt arrives.
+
+### The epoch closes, the secret comes out
+
+```ts
+const { serverSeed, merkleRoot, receiptCount } = tee.closeEpoch();
+// serverSeed = 0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f
+// merkleRoot = 0x32463667b5af984717a68783903f637a9ca60acba667224bc14bc6f9f871bb7e
+```
+
+At close, the casino reveals the seed it promised in step 1 and publishes a
+Merkle root over the digests of every receipt in the epoch. The root is
+what gets anchored onchain, so no receipt can be dropped or rewritten
+afterwards.
+
+### Replay everything yourself
+
+```ts
+verifyCommit(serverSeed, seedCommit);
+// true: the revealed seed hashes to the step 1 promise
+
+verifyOutcome(bet.receipt, rule, serverSeed);
+// { ok: true }: draws and payout recompute from the seed
+
+const digest = receiptDigest(bet.receipt, tee.domain);
+verifyMerkleProof(digest, merkleProof([digest], 0), toBytes(merkleRoot));
+// true: this receipt is provably inside the anchored epoch
+```
+
+Three recomputations, no trust involved: the commitment was honest, the
+outcome really follows from the seeds, and the receipt is part of the
+sealed epoch. Together with the signature check from step 5, that is the
+full offline story: four green lights per bet.
+
+</Steps>
+
+## The same thing as one script
+
+Paste this after the shared setup and run it with `tsx`:
+
+```ts
+const { seedCommit } = tee.openEpoch();
 const rule = dice({ target: 4999, mode: "over" });
 
-// 3. Place a bet. The receipt comes back already signed.
 const bet = tee.play({ clientSeed: "alice", rule });
-console.log("rolled", bet.receipt.draws[0], bet.receipt.win ? "win" : "lose");
-
-// 4. Check the signature right away, before any reveal.
 const signatureOk = verifyReceiptSignature(bet, tee.domain, tee.teeId).ok;
 
-// 5. Close the epoch: the secret seed is revealed
-//    and the Merkle root over all receipts is produced.
 const { serverSeed, merkleRoot } = tee.closeEpoch();
-
-// 6. Now run the remaining offline checks against the reveal.
 const digest = receiptDigest(bet.receipt, tee.domain);
 
 console.log({
@@ -43,22 +172,28 @@ console.log({
 
 ## Verify a whole epoch at once
 
-`verifyEpoch` runs every offline check across all receipts and reports
-exactly what failed and where:
+Checking bets one by one is fine for a player. An auditor wants the whole
+epoch in one call, and `verifyEpoch` does exactly that: every offline check
+across every receipt, with per-bet failure attribution.
 
 ```ts
 import { verifyEpoch } from "foreseer-sdk/verify";
 
 const result = verifyEpoch({
-    receipts,            // [{ receipt, signature }, ...] in betId order
-    rules,               // every rule used, matched by hash
+    receipts, // [{ receipt, signature }, ...] in betId order
+    rules, // every rule used in the epoch, matched by hash
     domain: { name: "Foreseer", version: "0", chainId: 114n },
-    serverSeed,          // revealed at close
+    serverSeed, // revealed at close
     merkleRoot,
-    closeSignature,      // optional, the epoch close signature
-    expectedTeeId,       // the attested TEE address
+    closeSignature, // optional, the signed epoch close
+    expectedTeeId, // the attested TEE address
 });
+```
 
+When everything is honest, `result.ok` is true. When it is not, the report
+names the exact bet and the exact check:
+
+```ts
 if (!result.ok) {
     for (const f of result.failures) {
         console.log(f.check, f.betId, f.detail);
@@ -67,30 +202,41 @@ if (!result.ok) {
 }
 ```
 
-Tamper with one byte of one receipt and the report names that betId with
-three failing checks (signature, outcome, merkle); everything else stays
-green.
+Tamper with one byte of one receipt and the report pins the damage: that
+betId fails its signature check (plus outcome, when the tampered byte
+feeds the outcome), and the epoch reports a merkle root mismatch. Every
+other receipt stays green. Bad data is returned as data, never thrown.
 
-## Fetch and verify from a Foreseer server
+## Fetch and verify from a live server
+
+Against a running Foreseer server, the public read API hands you every
+ingredient the checks need. No API key is required for any of this:
 
 ```ts
 const base = "https://play.example.com";
 const epochId = 7, betId = 42;
 
-// The revealed seed exists only after the epoch closes.
+// The epoch: seedCommit always, serverSeed only after close
 const epoch = await fetch(`${base}/epochs/${epochId}`).then((r) => r.json());
+
+// The receipt, its rule, and its Merkle proof
 const { receipts } = await fetch(`${base}/epochs/${epochId}/receipts?limit=1000`).then((r) => r.json());
 const entry = receipts.find((r) => r.receipt.betId === betId);
 const proof = await fetch(`${base}/epochs/${epochId}/proof/${betId}`).then((r) => r.json());
-const rule = await fetch(`${base}/rules/${entry.receipt.ruleHash}`).then((r) => r.json());
-const { teeId } = await fetch(`${base}/health`).then((r) => r.json());
+const { rule } = await fetch(`${base}/rules/${entry.receipt.ruleHash}`).then((r) => r.json());
 
-// Then run the same four checks as in the first example.
+// The TEE identity to compare signatures against
+const { teeId } = await fetch(`${base}/health`).then((r) => r.json());
 ```
+
+From here it is the same four checks as the walkthrough above. Or skip the
+code entirely: `GET /verify/7/42` runs them server side, and the hosted
+verify widget runs them in your browser.
 
 ## Low-level building blocks
 
-Everything consensus-critical is exported directly:
+Everything consensus-critical is exported directly, so you can go one
+level below the TEE object when you need to:
 
 ```ts
 import { ByteStream, drawInt, MerkleTree, toBytes, toHex } from "foreseer-sdk";
@@ -98,20 +244,19 @@ import { canonicalRuleBytes, ruleHash, resolveOutcome } from "foreseer-sdk/rules
 
 const seed = toBytes("0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
 
-// The raw deterministic stream and one unbiased draw.
+// The raw deterministic stream and one unbiased draw
 const stream = new ByteStream(seed, "alice", 0n);
-drawInt(stream, 0, 9999); // 3725 for the golden seed
+drawInt(stream, 0, 9999); // 3725, the same roll as the walkthrough
 
-// Resolve a bet end to end without a TEE object.
-const outcome = resolveOutcome(rule, seed, "alice", 0n);
+// Resolve a bet end to end without a TEE object
+resolveOutcome(rule, seed, "alice", 0n);
 // { draws: [3725], win: false, payoutBp: 0 }
 
-// Canonical rule bytes and the hash that goes into receipts.
-new TextDecoder().decode(canonicalRuleBytes(rule));
-ruleHash(rule); // 0x7939b82e...
+// Canonical rule bytes and the hash that goes into receipts
+ruleHash(rule); // 0xdd9d92df5a6f56bc664137373c13f866d3f7fb51fb4650ad09b85e8024779125
 
-// Build a Merkle tree once, serve many proofs.
-const tree = new MerkleTree(digests);
+// Build a Merkle tree once, serve many proofs
+const tree = new MerkleTree([receiptDigest(bet.receipt, tee.domain)]);
 tree.proof(0);
-toHex(tree.root);
+toHex(tree.root); // 0x32463667b5af984717a68783903f637a9ca60acba667224bc14bc6f9f871bb7e
 ```

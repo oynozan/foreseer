@@ -23,10 +23,11 @@ h4,
     font-family: "Akt", "Ubuntu", system-ui, sans-serif;
 }
 
+/* Coding components only: Ubuntu Mono, everything else stays Akt/Ubuntu */
 code,
 pre,
 kbd {
-    font-family: var(--font-ubuntu), "Ubuntu", system-ui, sans-serif;
+    font-family: var(--font-ubuntu-mono), "Ubuntu Mono", monospace;
 }
 
 /* Brand accent on the top of the viewport */
