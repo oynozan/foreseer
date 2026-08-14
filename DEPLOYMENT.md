@@ -1,31 +1,34 @@
 # Deploying Foreseer on a VPS with nginx
 
-Three public names, one box:
+Four public names, one box:
 
 | Name | Serves | Local port |
 | --- | --- | --- |
-| `foreseer.net` | landing, `/verify`, `/dashboard`, and the API under `/api` | 3000, 8787 |
+| `foreseer.net` | landing, `/verify`, `/dashboard` | 3000 |
+| `api.foreseer.net` | the Foreseer server: epochs, plays, receipts, billing | 8787 |
 | `docs.foreseer.net` | the Nextra documentation | 3001 |
-| `tee.foreseer.net` | the FCC extension proxy, the endpoint Flare providers post to | 6674 |
+| `tee.foreseer.net` | the FCC extension proxy, where Flare providers post | 6674 |
 
-The API lives at `https://foreseer.net/api` so it shares an origin with the
-dashboard and needs no CORS. If you prefer a separate name, add an A record
-for `api.foreseer.net` and drop the `/api/` location block below.
+Only nginx listens publicly. Every service binds to 127.0.0.1 and nginx
+terminates TLS in front of it.
 
-Nothing but nginx listens on a public interface. Every service binds to
-127.0.0.1.
+The API is a separate origin from the dashboard, which is fine: the server
+already sends permissive CORS headers, and the dashboard authenticates with
+an `x-owner-token` header rather than cookies, so there is no credentialed
+cross-origin problem.
 
 ## 1. DNS
 
-Three A records pointing at the VPS address:
+Four A records at the VPS address:
 
 ```
 foreseer.net.        A    <vps-ip>
+api.foreseer.net.    A    <vps-ip>
 docs.foreseer.net.   A    <vps-ip>
 tee.foreseer.net.    A    <vps-ip>
 ```
 
-Wait for propagation before requesting certificates, or certbot fails.
+Let them propagate before certbot, or the challenge fails.
 
 ## 2. Prepare the box
 
@@ -35,6 +38,7 @@ curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt in
 sudo corepack enable && sudo corepack prepare pnpm@10.18.0 --activate
 curl -fsSL https://get.docker.com | sudo sh
 sudo usermod -aG docker $USER && newgrp docker
+sudo npm install -g pm2
 
 sudo ufw allow OpenSSH && sudo ufw allow 80 && sudo ufw allow 443 && sudo ufw enable
 ```
@@ -47,25 +51,32 @@ git clone --recurse-submodules https://github.com/oynozan/foreseer /srv/foreseer
 cd /srv/foreseer
 ```
 
+`--recurse-submodules` matters: `packages/ts` is its own repository and the
+server links against it.
+
 ## 4. Server secrets
 
 The signing key is the product's identity. Its address must equal the
-`teeId` the deployed `ForeseerInstructionSender` was constructed with, or
-every anchor reverts. Copy the key you already deployed with, do not mint a
-new one.
+`teeId` the deployed `ForeseerInstructionSender` was constructed with
+(`0xc5d8af573bcbf19b46b51d5ccf65864dcd46f489`), or every anchor reverts and
+there is no setter to fix it. Copy the key you deployed with, never mint a
+new one here.
+
+Easiest safe transfer, straight from your machine:
 
 ```sh
-cp server/.env.example server/.env
+scp server/.env user@vps:/srv/foreseer/server/.env
+ssh user@vps 'chmod 600 /srv/foreseer/server/.env'
 ```
 
-Fill in:
+Then set the production values on the box:
 
 ```sh
-FORESEER_ADMIN_KEY=          # openssl rand -hex 24
-FORESEER_TEE_KEY=            # the key whose address is the contract teeId
-FORESEER_TREASURY=           # wallet that receives operator topups
+FORESEER_ADMIN_KEY=          # keep yours, or openssl rand -hex 24
+FORESEER_TEE_KEY=            # unchanged, address must equal the contract teeId
+FORESEER_TREASURY=0x2476de4a8586d889af91bcff9dd439286cf1b89b
 FORESEER_PRICE_PER_PLAY_WEI=10000000000000000
-FORESEER_EPOCH_SECONDS=300
+FORESEER_EPOCH_SECONDS=300   # 60 was for demo iteration, 300 means fewer anchors
 FORESEER_CHAIN_RPC=https://coston2-api.flare.network/ext/C/rpc
 FORESEER_READ_LIMIT=300
 ```
@@ -75,6 +86,13 @@ value fails loudly instead of quietly signing with a public key.
 
 ## 5. Run the API
 
+Bind it to loopback first. In `server/docker-compose.yaml`:
+
+```yaml
+ports:
+  - "127.0.0.1:8787:8787"
+```
+
 ```sh
 cd /srv/foreseer
 set -a && . server/.env && set +a
@@ -82,17 +100,10 @@ docker compose -f server/docker-compose.yaml up -d --build
 curl -s localhost:8787/health
 ```
 
-Expect `{"ok":true,"teeId":"0x...","chainId":114,"treasury":"0x..."}` with
-the teeId matching the contract. The compose file also runs an hourly
-backup into a named volume.
+Expect `{"ok":true,"teeId":"0xc5d8af57...","chainId":114,"treasury":"0x..."}`.
+If the teeId is anything else, stop and fix the key before going further.
 
-Bind it to localhost only by adding `127.0.0.1:` to the published port in
-`server/docker-compose.yaml`:
-
-```yaml
-ports:
-  - "127.0.0.1:8787:8787"
-```
+The compose stack also runs an hourly database backup into a named volume.
 
 ## 6. Build and run the two sites
 
@@ -104,52 +115,19 @@ cd /srv/foreseer/packages/ts && pnpm install --ignore-workspace --frozen-lockfil
 
 cd /srv/foreseer/web
 pnpm install --ignore-workspace --frozen-lockfile
-NEXT_PUBLIC_FORESEER_API=https://foreseer.net/api pnpm build
+NEXT_PUBLIC_FORESEER_API=https://api.foreseer.net pnpm build
 
 cd /srv/foreseer/docs
 pnpm install --ignore-workspace --frozen-lockfile
 pnpm build
 ```
 
-Two systemd units, both bound to loopback:
-
-```ini
-# /etc/systemd/system/foreseer-web.service
-[Unit]
-Description=Foreseer landing, verifier and dashboard
-After=network.target
-
-[Service]
-WorkingDirectory=/srv/foreseer/web
-Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1
-ExecStart=/usr/bin/pnpm start
-Restart=always
-User=%i
-
-[Install]
-WantedBy=multi-user.target
-```
-
-```ini
-# /etc/systemd/system/foreseer-docs.service
-[Unit]
-Description=Foreseer documentation
-After=network.target
-
-[Service]
-WorkingDirectory=/srv/foreseer/docs
-Environment=NODE_ENV=production PORT=3001 HOSTNAME=127.0.0.1
-ExecStart=/usr/bin/pnpm start
-Restart=always
-User=%i
-
-[Install]
-WantedBy=multi-user.target
-```
+Keep them alive with whatever you already use. With pm2:
 
 ```sh
-sudo systemctl daemon-reload
-sudo systemctl enable --now foreseer-web foreseer-docs
+cd /srv/foreseer/web  && PORT=3000 HOSTNAME=127.0.0.1 pm2 start "pnpm start" --name foreseer-web
+cd /srv/foreseer/docs && PORT=3001 HOSTNAME=127.0.0.1 pm2 start "pnpm start" --name foreseer-docs
+pm2 save && pm2 startup
 ```
 
 ## 7. nginx
@@ -159,14 +137,6 @@ sudo systemctl enable --now foreseer-web foreseer-docs
 server {
     listen 80;
     server_name foreseer.net www.foreseer.net;
-
-    location /api/ {
-        proxy_pass http://127.0.0.1:8787/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Forwarded-For $remote_addr;
-        proxy_set_header X-Forwarded-Proto $scheme;
-    }
-
     location / {
         proxy_pass http://127.0.0.1:3000;
         proxy_set_header Host $host;
@@ -176,8 +146,25 @@ server {
 }
 ```
 
-`X-Forwarded-For` matters: the server rate limits uncredentialed reads per
-client address and would otherwise see only nginx.
+```nginx
+# /etc/nginx/sites-available/api.foreseer.net
+server {
+    listen 80;
+    server_name api.foreseer.net;
+    client_max_body_size 128k;
+
+    location / {
+        proxy_pass http://127.0.0.1:8787;
+        proxy_set_header Host $host;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+}
+```
+
+`X-Forwarded-For` is not optional here: the server rate limits
+uncredentialed reads per client address and would otherwise see every
+visitor as nginx and throttle them as one.
 
 ```nginx
 # /etc/nginx/sites-available/docs.foreseer.net
@@ -198,7 +185,7 @@ server {
     listen 80;
     server_name tee.foreseer.net;
 
-    # Flare providers post instructions here
+    # Flare providers post cosigned instructions here
     location / {
         proxy_pass http://127.0.0.1:6674;
         proxy_set_header Host $host;
@@ -209,21 +196,23 @@ server {
 ```
 
 ```sh
-sudo ln -s /etc/nginx/sites-available/foreseer.net /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/docs.foreseer.net /etc/nginx/sites-enabled/
-sudo ln -s /etc/nginx/sites-available/tee.foreseer.net /etc/nginx/sites-enabled/
+cd /etc/nginx/sites-available
+for s in foreseer.net api.foreseer.net docs.foreseer.net tee.foreseer.net; do
+    sudo ln -sf /etc/nginx/sites-available/$s /etc/nginx/sites-enabled/$s
+done
 sudo nginx -t && sudo systemctl reload nginx
 
-sudo certbot --nginx -d foreseer.net -d www.foreseer.net -d docs.foreseer.net -d tee.foreseer.net
+sudo certbot --nginx -d foreseer.net -d www.foreseer.net \
+    -d api.foreseer.net -d docs.foreseer.net -d tee.foreseer.net
 ```
 
-Certbot rewrites the blocks for TLS and installs a renewal timer.
+Certbot rewrites the blocks for TLS and installs its own renewal timer.
 
 ## 8. The TEE machine
 
-This is what turns checks 2 and 4 from interface into fact. Under hackathon
-rules `SIMULATED_TEE=true` is accepted on Coston2, but the endpoint must be
-a stable public HTTPS name, which is exactly what `tee.foreseer.net` now is.
+This is what turns checks 2 and 4 from interface into fact. Hackathon rules
+accept `SIMULATED_TEE=true` on Coston2, but the endpoint must be a stable
+public HTTPS name, which `tee.foreseer.net` now is.
 
 You need Flare's indexer database credentials from the organizers.
 
@@ -246,12 +235,16 @@ LOCAL_MODE=false
 SIMULATED_TEE=true
 LANGUAGE=go
 DEPLOYMENT_PRIVATE_KEY=<funded coston2 key, no 0x>
-PROXY_PRIVATE_KEY=<proxy signing key>
+PROXY_PRIVATE_KEY=<fresh key, see the warning below>
 FORESEER_TEE_KEY=<same key as server/.env>
-INITIAL_OWNER=0x<deployer address>
-GOVERNANCE_SIGNERS=0x<governance address>
+INITIAL_OWNER=0x84ef59f489879c00dd2d60c5b7f5a94ee20a85a5
+GOVERNANCE_SIGNERS=0xF648f6eA8685914c581EF45E9AD2e94F9bEfb69F
 GOVERNANCE_THRESHOLD=1
 ```
+
+Generate `PROXY_PRIVATE_KEY` fresh with `openssl rand -hex 32`. The value
+shipped in `tee/.env.example` is the upstream scaffold's sample key and is
+public on GitHub, so anything using it is not private.
 
 ```sh
 bash ./scripts/use-chain.sh coston2
@@ -261,54 +254,33 @@ bash ./scripts/post-build.sh                          # allow version, governanc
 bash ./scripts/test.sh
 ```
 
-`/info` must report your `extensionId` and the `initialOwner` you set. Then
-confirm the machine reached production:
+`/info` must report your `extensionId` (`0x...0102c2`) and the
+`initialOwner` you set. Then confirm the machine reached production:
 
 ```sh
-cd tools && go run ./cmd/query-tee -ext 0x00000000000000000000000000000000000000000000000000000000000102c2 \
-  -rpc https://coston2-api.flare.network/ext/C/rpc
+cd tools && go run ./cmd/query-tee \
+    -ext 0x00000000000000000000000000000000000000000000000000000000000102c2 \
+    -rpc https://coston2-api.flare.network/ext/C/rpc
 ```
 
-Two traps from the platform, both silent:
+Two platform traps, both silent:
 
 - A restart mints a **new** teeId. Recovery is restart, re-register, reach
   production, then pause the stale identity. There is no restore.
-- The URL is stored onchain. If it ever changes, providers keep posting to
-  the old one.
+- The registered URL is stored onchain. If it ever changes, providers keep
+  posting to the old one.
 
 ## 9. Anchor epochs on a timer
 
-Closed epochs are only provable once anchored. Run it every ten minutes:
+Closed epochs are only provable once anchored. A cron line every ten
+minutes is enough:
 
 ```sh
-# /etc/systemd/system/foreseer-anchor.service
-[Unit]
-Description=Anchor closed Foreseer epochs
-
-[Service]
-Type=oneshot
-WorkingDirectory=/srv/foreseer/server
-EnvironmentFile=/srv/foreseer/server/.env
-Environment=FORESEER_SENDER=0x3f93049764efE9b33497Ffc3d0D92b5d262d1fE9
-Environment=FORESEER_POSTER_KEY=<poster key with gas>
-ExecStart=/usr/bin/node scripts/anchor.mjs
+crontab -e
 ```
 
-```ini
-# /etc/systemd/system/foreseer-anchor.timer
-[Unit]
-Description=Anchor Foreseer epochs every ten minutes
-
-[Timer]
-OnBootSec=5min
-OnUnitActiveSec=10min
-
-[Install]
-WantedBy=timers.target
 ```
-
-```sh
-sudo systemctl enable --now foreseer-anchor.timer
+*/10 * * * * cd /srv/foreseer/server && set -a && . ./.env && set +a && FORESEER_SENDER=0x3f93049764efE9b33497Ffc3d0D92b5d262d1fE9 FORESEER_POSTER_KEY=<poster key with gas> /usr/bin/node scripts/anchor.mjs >> /var/log/foreseer-anchor.log 2>&1
 ```
 
 The script refuses to run if the server key and the contract `teeId` ever
@@ -317,40 +289,41 @@ diverge, so a key mistake stops before it costs gas.
 ## 10. Prove it works
 
 ```sh
-curl -s https://foreseer.net/api/health
-curl -s https://docs.foreseer.net/ -o /dev/null -w '%{http_code}\n'
-curl -s https://tee.foreseer.net/info -o /dev/null -w '%{http_code}\n'
+curl -s https://api.foreseer.net/health
+curl -s -o /dev/null -w '%{http_code}\n' https://foreseer.net/
+curl -s -o /dev/null -w '%{http_code}\n' https://docs.foreseer.net/
+curl -s -o /dev/null -w '%{http_code}\n' https://tee.foreseer.net/info
 
-# create an operator and play one real bet
+# create the first operator
 ADMIN=$(grep ^FORESEER_ADMIN_KEY /srv/foreseer/server/.env | cut -d= -f2)
-curl -s -X POST https://foreseer.net/api/admin/operators \
-  -H "x-admin-key: $ADMIN" -H 'content-type: application/json' \
-  -d '{"name":"first-operator","ownerWallet":"0x<their wallet>"}'
+curl -s -X POST https://api.foreseer.net/admin/operators \
+    -H "x-admin-key: $ADMIN" -H 'content-type: application/json' \
+    -d '{"name":"first-operator","ownerWallet":"0x<owner wallet>"}'
 ```
 
 Then in a browser:
 
-1. `https://foreseer.net` loads, demos spin.
-2. `https://foreseer.net/verify?server=https://foreseer.net/api&epoch=1&bet=0`
-   loads and checks itself with no clicks.
+1. `https://foreseer.net` loads and the demos spin.
+2. `https://foreseer.net/verify?server=https://api.foreseer.net&epoch=1&bet=0`
+   loads and verifies itself with no clicks.
 3. `https://foreseer.net/dashboard` connects a wallet and shows that
-   operator's balance after a topup.
-4. `epochs(<id>)` on the sender reads `anchored: true` after the timer runs.
+   operator after a topup.
+4. `epochs(<id>)` on the sender reads `anchored: true` once cron has run.
 
 ## 11. Backups are not optional
 
 The database holds every epoch's server seed. Lose it and every receipt in
 flight becomes unverifiable, which is the one failure the product cannot
-explain away. The compose stack already backs up hourly into the
-`foreseer-backups` volume; copy that volume off the box:
+explain away. Compose backs up hourly into the `foreseer-backups` volume;
+copy it off the box:
 
 ```sh
 docker run --rm -v foreseer-backups:/b -v /srv/backups:/out alpine \
-  sh -c 'cp /b/$(ls -t /b | head -1) /out/'
+    sh -c 'cp /b/$(ls -t /b | head -1) /out/'
 ```
 
-Ship `/srv/backups` somewhere else on a schedule. A backup that lives on the
-same disk as the database is not a backup.
+Ship `/srv/backups` somewhere else on a schedule. A backup on the same disk
+as the database is not a backup.
 
 ## What is still true after all this
 
