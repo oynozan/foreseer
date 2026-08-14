@@ -7,6 +7,7 @@ import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
 import Nav from "@/components/Nav";
+import RouletteDemo from "@/components/RouletteDemo";
 
 export default function Home() {
     return (
@@ -15,7 +16,7 @@ export default function Home() {
             <main>
                 <Hero />
                 <Band id="demo-roulette" meta={["[ 01 / 07 ]", "GAMES // ROULETTE //"]}>
-                    <div className="h-80" data-demo="roulette" />
+                    <RouletteDemo />
                 </Band>
                 <Band id="demo-games" meta={["[ 02 / 07 ]", "GAMES // COINFLIP + DICE //"]}>
                     <div className="grid gap-4 pt-12 md:grid-cols-2">

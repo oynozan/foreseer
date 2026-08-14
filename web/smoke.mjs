@@ -112,6 +112,24 @@ if (existsSync(tsx) || existsSync(tsx + ".CMD")) {
     fail("tsx runner missing, cannot run the roulette core test");
 }
 
+// the sdk must ship, but never in the landing page's initial bundle
+const SDK_MARK = "epoch already open, close it first";
+const chunkDir = join(root, ".next", "static", "chunks");
+if (existsSync(chunkDir)) {
+    const chunks = walk(chunkDir).filter((f) => f.endsWith(".js"));
+    const carrying = chunks.filter((f) => readFileSync(f, "utf8").includes(SDK_MARK));
+    if (carrying.length > 0) ok(`sdk ships in ${carrying.length} lazy chunk(s)`);
+    else fail("sdk marker not found in any chunk, the demo cannot work");
+
+    const htmlPath2 = join(root, ".next", "server", "app", "index.html");
+    if (existsSync(htmlPath2)) {
+        const page2 = readFileSync(htmlPath2, "utf8");
+        const eager = carrying.filter((f) => page2.includes(f.split(/[\\/]/).pop()));
+        if (eager.length === 0) ok("sdk stays out of the initial page bundle");
+        else fail("sdk eagerly loaded by index.html: " + eager.map((f) => f.split(/[\\/]/).pop()).join(", "));
+    }
+}
+
 // verify page and widget bundle exist
 if (existsSync(join(root, ".next", "server", "app", "verify.html"))) ok("verify page prerendered");
 else fail("verify page missing from build");
