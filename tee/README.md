@@ -104,13 +104,23 @@ public RPC: owner, poster and treasury are the deployer, `epochFee` 0.1 C2FLR,
 The operator bond of 1 C2FLR is unaffected: `OperatorBond` keys bonds by
 operator address and holds no reference to the sender.
 
-NOT YET ANCHORED. The previous sender `0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6`
-carried `teeId` `0x7e5f4552...395bdf`, the SPEC 9.1 reference key, so anyone
-could forge an epoch close against it. Its anchored golden epoch
-(`commitEpoch` `0xee82feb5...28b2d5`, `anchorEpoch` `0x293c0e32...d2529f`)
-belongs to that dead contract and cannot be replayed here: the golden close
-signature recovers to the reference key, not to the new `teeId`. Restoring the
-live demo means running a fresh epoch through the extension and anchoring that.
+Epoch 1 is anchored on the public network, signed by the new `teeId`:
+
+| Item | Value |
+| --- | --- |
+| `commitEpoch` | `0x7ba55f33...d49c902` |
+| `anchorEpoch` | `0x0223675c...9572f209` |
+| Merkle root | `0x83d484887b11741894c92eca72af7e256f0554e8e73233dcbecb86f9a3c79dc7` |
+| Receipts | 3 |
+
+The contract verified the close signature by ecrecover to `teeId` on chain id
+114 and the SHA256 seed reveal against the commitment. `epochs(1)` reads back
+`committed` and `anchored` true with the values the extension produced.
+
+The previous sender `0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6` carried
+`teeId` `0x7e5f4552...395bdf`, the SPEC 9.1 reference key, so anyone could
+forge an epoch close against it. Its golden epoch cannot be replayed here:
+that close signature recovers to the reference key, not to the new `teeId`.
 
 ## Flare registry registration (live)
 
