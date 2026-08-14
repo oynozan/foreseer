@@ -32,7 +32,7 @@ function render(result) {
     const rows = CHAIN_ROWS.map(([key, label]) => {
         if (CHAIN_ONLY.has(key)) {
             return `<div class="check chain"><span class="dot">&#9679;</span> ${label}
-                <small>chain read: live once ForeseerInstructionSender is registered on Coston2</small></div>`;
+                <small>onchain: this page reads no chain, check epochs(id) on ForeseerInstructionSender</small></div>`;
         }
         const c = result.checks[key];
         const cls = c.ok ? "green" : "red";
