@@ -1,4 +1,4 @@
-import { MAX_SPINS, ORANGE_BAND_RULE } from "@/lib/roulette";
+import { MAX_SPINS, WHEEL_RULE } from "@/lib/roulette";
 
 export interface SpinRecord {
     epochId: bigint;
@@ -91,7 +91,7 @@ async function build(): Promise<TeeHandle> {
         spin() {
             if (!open) throw new Error("start a new epoch first");
             if (spins.length >= MAX_SPINS) throw new Error("epoch full, reveal to continue");
-            const bet = tee.play({ clientSeed, rule: ORANGE_BAND_RULE });
+            const bet = tee.play({ clientSeed, rule: WHEEL_RULE });
             const sigCheck = verify.verifyReceiptSignature(bet, tee.domain, tee.teeId);
             const record: SpinRecord = {
                 epochId: bet.receipt.epochId,
@@ -126,34 +126,34 @@ async function build(): Promise<TeeHandle> {
             const commitOk = verify.verifyCommit(closed.serverSeed, seedCommit);
             let outcomeOk = true;
             for (const s of signed) {
-                if (!verify.verifyOutcome(s.receipt, ORANGE_BAND_RULE, closed.serverSeed).ok) outcomeOk = false;
+                if (!verify.verifyOutcome(s.receipt, WHEEL_RULE, closed.serverSeed).ok) outcomeOk = false;
             }
             const signatureOk = spins.every((s) => s.signatureOk);
 
             const checks: CheckRow[] = [
                 {
                     key: "signature",
-                    label: "The house signed every receipt",
+                    label: "Signed by the house",
                     ok: signatureOk,
-                    detail: `${spins.length} of ${spins.length} recovered to ${tee.teeId}`,
+                    detail: tee.teeId,
                 },
                 {
                     key: "commit",
-                    label: "The revealed seed matches the commitment published before your first spin",
+                    label: "Seed matches the commitment",
                     ok: commitOk,
                     detail: closed.serverSeed,
                 },
                 {
                     key: "outcome",
-                    label: "Every pocket recomputes from the revealed seed",
+                    label: "Pockets recompute from the seed",
                     ok: outcomeOk,
-                    detail: `draws, win and payout identical on all ${spins.length}`,
+                    detail: `all ${spins.length} identical`,
                 },
                 {
                     key: "merkle",
-                    label: "Every receipt proves into the epoch root",
+                    label: "Receipts prove into the root",
                     ok: merkleOk,
-                    detail: `root ${closed.merkleRoot}, proof depth ${proofDepth}`,
+                    detail: `${closed.merkleRoot} at depth ${proofDepth}`,
                 },
             ];
 

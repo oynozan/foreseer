@@ -29,7 +29,7 @@ const RouletteStrip = forwardRef<HTMLDivElement>(function RouletteStrip(_props, 
                 <div
                     ref={ref}
                     data-reel-cells
-                    className="absolute top-1/2 left-0 flex -translate-y-1/2 gap-2"
+                    className="absolute top-1/2 left-0 flex -translate-y-1/2 gap-0.5"
                     style={{ willChange: "transform" }}
                 >
                     {cells.map(({ i, pocket }) => (
@@ -37,7 +37,7 @@ const RouletteStrip = forwardRef<HTMLDivElement>(function RouletteStrip(_props, 
                             key={i}
                             data-cell={i}
                             data-pocket={pocket}
-                            className={`tech grid h-18 w-12 shrink-0 place-items-center rounded-stage border text-[15px] sm:h-22 sm:w-16 ${
+                            className={`tech grid size-12 shrink-0 place-items-center rounded-chip border text-[15px] sm:size-16 ${
                                 TONE_CLASS[toneOf(pocket)]
                             }`}
                         >

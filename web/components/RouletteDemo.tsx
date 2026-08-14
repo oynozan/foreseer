@@ -6,16 +6,13 @@ import RouletteStrip from "@/components/RouletteStrip";
 import {
     GEO,
     MAX_SPINS,
-    ORANGE_BAND_RULE,
     SPIN_EASE,
     SPIN_MS,
     cellUnderMarker,
-    payoutMultiplier,
     pocketAtCell,
     restAfterSettle,
     resultLine,
     spinTarget,
-    toneOf,
     translateXFor,
 } from "@/lib/roulette";
 import { ensureTee, type EpochView, type SpinRecord, type TeeHandle } from "@/lib/roulette-tee";
@@ -129,7 +126,7 @@ export default function RouletteDemo() {
             if (!aliveRef.current) return;
             setLast(record);
             setView(teeRef.current?.snapshot() ?? null);
-            setAnnouncement(resultLine(record.pocket, record.win, record.betId, record.epochId));
+            setAnnouncement(resultLine(record.pocket, record.betId, record.epochId));
             setPhase("settled");
         },
         [applyRest],
@@ -228,12 +225,13 @@ export default function RouletteDemo() {
         <div ref={sectionRef} data-demo="roulette" className="pt-12" aria-busy={spinning}>
             <div className="max-w-2xl">
                 <h2 className="text-[clamp(28px,3.2vw,40px)] font-medium leading-[1.1] tracking-[-0.02em]">
-                    Bet the orange band. <span className="text-primary">Recompute the result.</span>
+                    The pocket was fixed <span className="text-primary">before you spun.</span>
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-muted">
-                    Every spin bets the same thing: the ball lands in the orange band, pockets 1 through 7. Seven of
-                    fifteen pockets win, so the rule pays {payoutMultiplier(ORANGE_BAND_RULE.payout_bp)}x at 99 percent
-                    RTP. No stake, no chips, nothing to choose. The point is the receipt.
+                    A demand-based wheel: every spin is yours alone, resolved the moment you ask for it rather than on
+                    a shared timer. The seed behind all fifteen pockets was committed before your first spin, so each
+                    result was already determined and nobody could steer it. Reveal the seed and recompute every pocket
+                    yourself.
                 </p>
             </div>
 
@@ -245,23 +243,15 @@ export default function RouletteDemo() {
                 <p role="status" aria-live="polite" aria-atomic="true" className="min-h-6 text-[14px]">
                     {last ? (
                         <>
-                            <span
-                                className={`chip tech mr-2 ${
-                                    last.win ? "border-mint bg-mint text-mint-ink" : ""
-                                }`}
-                            >
+                            <span data-result-pocket={last.pocket} className="chip tech mr-2 border-ink text-ink">
                                 pocket {last.pocket}
                             </span>
-                            {last.win
-                                ? `in the orange band. Pays ${payoutMultiplier(last.payoutBp)}x.`
-                                : toneOf(last.pocket) === "green"
-                                  ? "the green pocket. No payout."
-                                  : "outside the orange band. No payout."}
+                            <span className="text-muted">determined before you spun, receipt below.</span>
                         </>
                     ) : (
                         <span className="text-muted">
                             {phase === "revealed"
-                                ? "Epoch closed and verified below."
+                                ? "Epoch closed. Every pocket recomputed below."
                                 : spinning
                                   ? "Spinning."
                                   : "The seed behind these fifteen pockets is already fixed. You are looking at its SHA-256."}

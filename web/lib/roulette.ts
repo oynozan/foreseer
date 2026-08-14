@@ -43,7 +43,8 @@ export function payoutBp(winCount: number, outcomeCount: number): number {
     return Math.floor((RTP_BP * outcomeCount) / winCount);
 }
 
-export const ORANGE_BAND_RULE: RouletteRule = Object.freeze({
+// The wheel's rule document, bound into every receipt.
+export const WHEEL_RULE: RouletteRule = Object.freeze({
     v: 0,
     random: { type: "int", min: 0, max: POCKET_COUNT - 1, count: 1 },
     win: {
@@ -57,15 +58,15 @@ export const ORANGE_BAND_RULE: RouletteRule = Object.freeze({
 }) as RouletteRule;
 
 // Pinned so an accidental rule edit fails the test loudly.
-export const ORANGE_BAND_RULE_HASH = "0x16e58af8e0ba6717dadcb49de1f953fc13434f536ee5d7ec2d859dce8bb1cf6d";
+export const WHEEL_RULE_HASH = "0x16e58af8e0ba6717dadcb49de1f953fc13434f536ee5d7ec2d859dce8bb1cf6d";
 
 export const GEO = {
     cell: 64,
-    gap: 8,
-    pitch: 72,
+    gap: 2,
+    pitch: 66,
     cellNarrow: 48,
-    gapNarrow: 8,
-    pitchNarrow: 56,
+    gapNarrow: 2,
+    pitchNarrow: 50,
     cellCount: 240,
     baseCell: 45,
     initialCell: 47,
@@ -119,8 +120,6 @@ export function payoutMultiplier(bp: number): string {
     return (bp / 10000).toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
 }
 
-export function resultLine(pocket: number, win: boolean, betId: bigint, epochId: bigint): string {
-    const band = win ? "orange band" : toneOf(pocket) === "green" ? "green pocket" : "dark band";
-    const verdict = win ? `Win, pays ${payoutMultiplier(ORANGE_BAND_RULE.payout_bp)} times.` : "No payout.";
-    return `Pocket ${pocket}, ${band}. ${verdict} Bet ${betId} of epoch ${epochId}.`;
+export function resultLine(pocket: number, betId: bigint, epochId: bigint): string {
+    return `Pocket ${pocket}. Determined before you spun. Spin ${betId} of epoch ${epochId}.`;
 }

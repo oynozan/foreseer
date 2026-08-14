@@ -5,8 +5,8 @@ import { ReferenceTee } from "foreseer-sdk/reference";
 import { verifyEpoch, verifyMerkleProof } from "foreseer-sdk/verify";
 import {
     GEO,
-    ORANGE_BAND_RULE,
-    ORANGE_BAND_RULE_HASH,
+    WHEEL_RULE,
+    WHEEL_RULE_HASH,
     POCKET_COUNT,
     SLOT,
     cellUnderMarker,
@@ -33,12 +33,12 @@ const eq = (got, want, label) => {
 };
 
 // 1. rule validity and pinned hash
-validateRule(ORANGE_BAND_RULE);
+validateRule(WHEEL_RULE);
 ok("rule validates");
-eq(ruleHash(ORANGE_BAND_RULE), ORANGE_BAND_RULE_HASH, "rule hash matches the pinned literal");
+eq(ruleHash(WHEEL_RULE), WHEEL_RULE_HASH, "rule hash matches the pinned literal");
 
 // 2. payout math
-eq(ORANGE_BAND_RULE.payout_bp, 21214, "orange band pays 21214 bp");
+eq(WHEEL_RULE.payout_bp, 21214, "wheel rule pays 21214 bp");
 eq(payoutBp(7, 15), 21214, "payoutBp(7, 15)");
 eq(payoutBp(1, 15), 148500, "payoutBp(1, 15)");
 
@@ -51,7 +51,7 @@ function playAll() {
     const tee = new ReferenceTee({ serverSeed: SEED, now: () => 1700000000n });
     const epoch = tee.openEpoch();
     const signed = [];
-    for (let i = 0; i < SPINS; i++) signed.push(tee.play({ clientSeed: CLIENT, rule: ORANGE_BAND_RULE }));
+    for (let i = 0; i < SPINS; i++) signed.push(tee.play({ clientSeed: CLIENT, rule: WHEEL_RULE }));
     return { tee, epoch, signed };
 }
 
@@ -69,7 +69,7 @@ eq(
 // the recomputation path a verifier uses must agree with the play path
 let recomputeOk = true;
 for (let i = 0; i < SPINS; i++) {
-    const out = resolveOutcome(ORANGE_BAND_RULE, toBytes(SEED), CLIENT, BigInt(i));
+    const out = resolveOutcome(WHEEL_RULE, toBytes(SEED), CLIENT, BigInt(i));
     if (out.draws[0] !== drawsA[i] || out.win !== runA.signed[i].receipt.win) recomputeOk = false;
 }
 if (recomputeOk) ok("resolveOutcome agrees with every played receipt");
@@ -84,8 +84,8 @@ for (const s of runA.signed) {
     if (s.receipt.win !== expectWin || s.receipt.payoutBp !== expectPay) bandOk = false;
     if (pocket < 0 || pocket >= POCKET_COUNT) bandOk = false;
 }
-if (bandOk) ok("win and payout match the orange band for every receipt");
-else fail("a receipt disagreed with the band");
+if (bandOk) ok("win and payout match the rule for every receipt");
+else fail("a receipt disagreed with the rule");
 
 // tones: exactly 1 green, 7 primary, 7 dark
 const tones = { green: 0, primary: 0, dark: 0 };
@@ -182,7 +182,7 @@ const close = runA.tee.closeEpoch();
 const receipts = runA.signed;
 const epochResult = verifyEpoch({
     receipts,
-    rules: [ORANGE_BAND_RULE],
+    rules: [WHEEL_RULE],
     domain: runA.tee.domain,
     serverSeed: close.serverSeed,
     seedCommit: runA.epoch.seedCommit,
@@ -207,7 +207,7 @@ else fail("a merkle proof failed");
 const forgedSeed = "0x22" + "11".repeat(31);
 const negative = verifyEpoch({
     receipts,
-    rules: [ORANGE_BAND_RULE],
+    rules: [WHEEL_RULE],
     domain: runA.tee.domain,
     serverSeed: forgedSeed,
     seedCommit: runA.epoch.seedCommit,

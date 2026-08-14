@@ -2,9 +2,12 @@ import type { Metadata } from "next";
 import { Akt, Ubuntu, Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
 
+// Akt ships no metric overrides, so pick the fallback ourselves
 const akt = Akt({
     subsets: ["latin"],
     variable: "--font-akt",
+    fallback: ["Ubuntu", "system-ui", "sans-serif"],
+    adjustFontFallback: false,
 });
 
 const ubuntu = Ubuntu({
