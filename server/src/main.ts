@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { openDb } from "./db";
 import { Engine } from "./engine";
 import { createApp } from "./app.module";
-import type { Hex } from "foreseer.ts";
+import type { Hex } from "@foreseer/sdk";
 
 async function bootstrap(): Promise<void> {
     const port = Number(process.env.PORT ?? 8787);

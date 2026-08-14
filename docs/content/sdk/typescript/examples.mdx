@@ -1,0 +1,117 @@
+# Examples
+
+Every example on this page is runnable as written (`tsx file.ts`), and the
+values in the comments are real outputs from the golden test seed.
+
+## Play a full epoch, step by step
+
+```ts
+import { dice, merkleProof, receiptDigest, toBytes } from "@foreseer/sdk";
+import { ReferenceTee } from "@foreseer/sdk/reference";
+import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "@foreseer/sdk/verify";
+
+// 1. Boot a TEE and open an epoch.
+//    The seed commitment is published before any bet exists.
+const tee = new ReferenceTee();
+const { seedCommit } = tee.openEpoch();
+
+// 2. Build a game rule: classic dice, win above 4999, pays 1.98x.
+const rule = dice({ target: 4999, mode: "over" });
+
+// 3. Place a bet. The receipt comes back already signed.
+const bet = tee.play({ clientSeed: "alice", rule });
+console.log("rolled", bet.receipt.draws[0], bet.receipt.win ? "win" : "lose");
+
+// 4. Check the signature right away, before any reveal.
+const signatureOk = verifyReceiptSignature(bet, tee.domain, tee.teeId).ok;
+
+// 5. Close the epoch: the secret seed is revealed
+//    and the Merkle root over all receipts is produced.
+const { serverSeed, merkleRoot } = tee.closeEpoch();
+
+// 6. Now run the remaining offline checks against the reveal.
+const digest = receiptDigest(bet.receipt, tee.domain);
+
+console.log({
+    signature: signatureOk,
+    commit: verifyCommit(serverSeed, seedCommit),
+    outcome: verifyOutcome(bet.receipt, rule, serverSeed).ok,
+    merkle: verifyMerkleProof(digest, merkleProof([digest], 0), toBytes(merkleRoot)),
+});
+// { signature: true, commit: true, outcome: true, merkle: true }
+```
+
+## Verify a whole epoch at once
+
+`verifyEpoch` runs every offline check across all receipts and reports
+exactly what failed and where:
+
+```ts
+import { verifyEpoch } from "@foreseer/sdk/verify";
+
+const result = verifyEpoch({
+    receipts,            // [{ receipt, signature }, ...] in betId order
+    rules,               // every rule used, matched by hash
+    domain: { name: "Foreseer", version: "0", chainId: 114n },
+    serverSeed,          // revealed at close
+    merkleRoot,
+    closeSignature,      // optional, the epoch close signature
+    expectedTeeId,       // the attested TEE address
+});
+
+if (!result.ok) {
+    for (const f of result.failures) {
+        console.log(f.check, f.betId, f.detail);
+        // e.g. "signature 57n recovered address does not match expected teeId"
+    }
+}
+```
+
+Tamper with one byte of one receipt and the report names that betId with
+three failing checks (signature, outcome, merkle); everything else stays
+green.
+
+## Fetch and verify from a Foreseer server
+
+```ts
+const base = "https://play.example.com";
+const epochId = 7, betId = 42;
+
+// The revealed seed exists only after the epoch closes.
+const epoch = await fetch(`${base}/epochs/${epochId}`).then((r) => r.json());
+const { receipts } = await fetch(`${base}/epochs/${epochId}/receipts?limit=1000`).then((r) => r.json());
+const entry = receipts.find((r) => r.receipt.betId === betId);
+const proof = await fetch(`${base}/epochs/${epochId}/proof/${betId}`).then((r) => r.json());
+const rule = await fetch(`${base}/rules/${entry.receipt.ruleHash}`).then((r) => r.json());
+const { teeId } = await fetch(`${base}/health`).then((r) => r.json());
+
+// Then run the same four checks as in the first example.
+```
+
+## Low-level building blocks
+
+Everything consensus-critical is exported directly:
+
+```ts
+import { ByteStream, drawInt, MerkleTree, toBytes, toHex } from "@foreseer/sdk";
+import { canonicalRuleBytes, ruleHash, resolveOutcome } from "@foreseer/sdk/rules";
+
+const seed = toBytes("0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+
+// The raw deterministic stream and one unbiased draw.
+const stream = new ByteStream(seed, "alice", 0n);
+drawInt(stream, 0, 9999); // 3725 for the golden seed
+
+// Resolve a bet end to end without a TEE object.
+const outcome = resolveOutcome(rule, seed, "alice", 0n);
+// { draws: [3725], win: false, payoutBp: 0 }
+
+// Canonical rule bytes and the hash that goes into receipts.
+new TextDecoder().decode(canonicalRuleBytes(rule));
+ruleHash(rule); // 0x7939b82e...
+
+// Build a Merkle tree once, serve many proofs.
+const tree = new MerkleTree(digests);
+tree.proof(0);
+toHex(tree.root);
+```

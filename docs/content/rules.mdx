@@ -102,7 +102,7 @@ same game always has the same hash in every implementation.
 You rarely write rule JSON by hand:
 
 ```ts
-import { dice, coinflip } from "foreseer.ts";
+import { dice, coinflip } from "@foreseer/sdk";
 
 const overDice = dice({ target: 4999, mode: "over" }); // pays 19800 bp
 const under = dice({ target: 2500, mode: "under" });   // pays by true odds

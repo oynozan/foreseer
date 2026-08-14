@@ -1,0 +1,52 @@
+# Installation
+
+## From npm
+
+```sh
+npm install @foreseer/sdk
+# or
+pnpm add @foreseer/sdk
+# or
+yarn add @foreseer/sdk
+```
+
+Requirements:
+
+- Node 20 or newer (for WebCrypto and ES2022), or any modern browser
+- ESM and CommonJS are both shipped; types are included
+
+## Verify it works
+
+```ts
+import { dice } from "@foreseer/sdk";
+import { ReferenceTee } from "@foreseer/sdk/reference";
+
+const tee = new ReferenceTee();
+tee.openEpoch();
+const bet = tee.play({ clientSeed: "hello", rule: dice({ target: 4999, mode: "over" }) });
+
+console.log("it works, rolled:", bet.receipt.draws[0]);
+```
+
+## In the browser
+
+The package is bundler-friendly (no Node builtins in the consensus or
+verify paths). Bundle it with esbuild, Vite, or webpack as usual; the
+hosted verifier widget is exactly this package compiled to a 58 kB IIFE.
+
+## From source
+
+The SDK lives in the Foreseer monorepo as `packages/ts` (its own git
+repository, vendored as a submodule):
+
+```sh
+git clone --recurse-submodules <repo-url>
+cd foreseer/packages/ts
+pnpm install --ignore-workspace
+pnpm build
+pnpm test        # 118 tests, including the golden vector suite
+```
+
+`test/vectors/` is committed inside the package, so the suite passes on a
+standalone clone too. Regenerating vectors (`pnpm gen-vectors`) requires the
+monorepo checkout and must produce byte-identical files.

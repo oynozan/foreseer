@@ -1,0 +1,26 @@
+# SDKs
+
+Foreseer ships one installable SDK today, with the rest of the stack
+implemented in matching, vector-verified codebases.
+
+| Language | Package | Status |
+| --- | --- | --- |
+| TypeScript | [`@foreseer/sdk`](/sdk/typescript/introduction) | published, the normative reference |
+| Go | `tee/go/internal/engine` | powers the TEE itself, not a public package |
+| Solidity | `ForeseerInstructionSender`, `OperatorBond` | onchain anchoring and bonding contracts |
+
+All three reproduce FORESEER-SPEC v0.1 byte for byte against the shared
+golden vectors, so an integration written against one is provable against
+the others.
+
+## Which one do I want?
+
+- **Building a game frontend or backend?** The
+  [TypeScript SDK](/sdk/typescript/introduction): rules, receipts, and every
+  offline verification check, in the browser or Node.
+- **Verifying as a player?** Also the TypeScript SDK (or the hosted
+  verifier widget, which is the same library bundled).
+- **Porting to another language?** Start from the spec and the golden
+  vectors in `spec/vectors/`; the three existing implementations are your
+  referees. The [reference page](/sdk/typescript/reference) doubles as a
+  checklist of what a port must expose.

@@ -1,0 +1,57 @@
+# Introduction
+
+`@foreseer/sdk` is the reference implementation of FORESEER-SPEC v0.1: the
+consensus engine, the verifier, and a reference TEE, in one dependency-light
+package. It has exactly two runtime dependencies (`@noble/hashes` and
+`@noble/curves`), no network code, no native modules, and it runs in Node
+and in the browser.
+
+It is also the **normative** implementation: the Go engine inside the TEE
+and the Solidity anchoring contract must match it byte for byte, and the
+golden test vectors enforce that in CI for all three.
+
+## Entry points
+
+| Import | Contents |
+| --- | --- |
+| `@foreseer/sdk` | types, byte stream, draws, rules, receipts, commit, Merkle, presets |
+| `@foreseer/sdk/rules` | rule AST validation, canonical JSON, hashing, evaluation |
+| `@foreseer/sdk/verify` | the offline verification checks plus `verifyEpoch` |
+| `@foreseer/sdk/reference` | `ReferenceTee`, `generateClientSeed`, test constants |
+
+A 30 second taste:
+
+```ts
+import { dice } from "@foreseer/sdk";
+import { ReferenceTee } from "@foreseer/sdk/reference";
+
+const tee = new ReferenceTee();
+tee.openEpoch();
+
+const bet = tee.play({ clientSeed: "alice", rule: dice({ target: 4999, mode: "over" }) });
+console.log(bet.receipt.draws[0], bet.receipt.win);
+```
+
+`ReferenceTee` is not a mock. It runs the real protocol without enclave
+hardware, and it is the behavior the production TEE mirrors exactly.
+
+## Determinism guarantees
+
+Consensus code contains no floats, no `Math.random`, no `Date.now`, and no
+locale-dependent behavior; every consensus function is pinned to its spec
+section with a `FORESEER-SPEC` comment. The only randomness in the package
+(epoch seed generation and `generateClientSeed`) uses WebCrypto and lives
+clearly apart in the reference module.
+
+Two implementations of this spec given the same
+`(serverSeed, clientSeed, nonce, rule)` must produce identical draws,
+identical receipts, and identical signatures, down to the byte. That is not
+a goal, it is a tested invariant: the package's golden suite replays
+`spec/vectors/` and the Go and Solidity sides replay the same files.
+
+## Where to go next
+
+- [Installation](/sdk/typescript/installation) to get set up.
+- [Examples](/sdk/typescript/examples) for full epoch, verification, and
+  low-level walkthroughs.
+- [Reference](/sdk/typescript/reference) for the complete API surface.

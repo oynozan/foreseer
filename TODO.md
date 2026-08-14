@@ -6,7 +6,7 @@ Folder TODOs: [spec/TODO.md](spec/TODO.md), [packages/ts/TODO.md](packages/ts/TO
 ## Phase 1: spec, TypeScript reference, golden vectors (done)
 
 - [x] Write FORESEER-SPEC v0.1 in spec/SPEC.md
-- [x] Implement foreseer.ts core: derive, rules, receipt, commit, merkle, verify
+- [x] Implement @foreseer/sdk core: derive, rules, receipt, commit, merkle, verify
 - [x] Implement ReferenceTee and presets (dice, coinflip)
 - [x] Generate golden vectors into spec/vectors/ and sync to packages/ts/test/vectors/
 - [x] Golden tests, property and edge tests, full e2e epoch test all green

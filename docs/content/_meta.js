@@ -3,7 +3,7 @@ export default {
     "how-it-works": "How it works",
     rules: "Game rules",
     verify: "Verify your bet",
-    sdk: "TypeScript SDK",
+    sdk: "SDK",
     api: "Server API",
     architecture: "Architecture",
     security: "Security model",

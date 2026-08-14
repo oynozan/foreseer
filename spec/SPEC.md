@@ -2,7 +2,7 @@
 
 Normative protocol specification for Foreseer, a provably-fair outcome engine.
 This document is the source of truth. The TypeScript reference implementation
-(`packages/ts`, npm package `foreseer.ts`) and the future Go TEE engine MUST
+(`packages/ts`, npm package `@foreseer/sdk`) and the future Go TEE engine MUST
 produce byte-identical results for everything defined here. If an
 implementation and this spec disagree, the implementation is wrong.
 
@@ -365,7 +365,7 @@ whether they run offline (pure, implemented in v0.1) or need chain reads
 | 5 | Draws, win, payout recompute exactly from the seed (§6.2) | `verifyOutcome` | pure |
 | 6 | Receipt digest proves into the epoch Merkle root (§7), and that root is anchored onchain | `verifyMerkleProof` + `ChainReader.getMerkleRoot` | pure + chain |
 
-Checks 1, 3, 5, and the proof half of 6 are implemented in `foreseer.ts`
+Checks 1, 3, 5, and the proof half of 6 are implemented in `@foreseer/sdk`
 v0.1 and need nothing but the receipt, rule, revealed seed, proof, and root.
 The chain half is specified as a TypeScript interface only, with no
 implementation and no chain library in v0.1:

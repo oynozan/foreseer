@@ -2,9 +2,9 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, describe, expect, it } from "vitest";
-import { dice, coinflip, toBytes, verifyCommit } from "foreseer.ts";
-import { verifyEpoch } from "foreseer.ts/verify";
-import type { Hex, SignedReceipt } from "foreseer.ts";
+import { dice, coinflip, toBytes, verifyCommit } from "@foreseer/sdk";
+import { verifyEpoch } from "@foreseer/sdk/verify";
+import type { Hex, SignedReceipt } from "@foreseer/sdk";
 import { openDb } from "../src/db";
 import { Engine, ApiError, rowToReceipt } from "../src/engine";
 

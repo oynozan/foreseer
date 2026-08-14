@@ -19,9 +19,9 @@
     "@nestjs/core": "^11.1.29",
     "@nestjs/platform-express": "^11.1.29",
     "better-sqlite3": "^13.0.3",
-    "foreseer.ts": "file:../packages/ts",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
+    "rxjs": "^7.8.2",
+    "@foreseer/sdk": "file:../packages/ts"
   },
   "devDependencies": {
     "@swc/core": "^1.15.47",

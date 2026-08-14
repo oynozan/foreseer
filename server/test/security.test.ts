@@ -1,6 +1,6 @@
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { dice } from "foreseer.ts";
+import { dice } from "@foreseer/sdk";
 import { openDb } from "../src/db";
 import { Engine } from "../src/engine";
 import { createApp } from "../src/app.module";

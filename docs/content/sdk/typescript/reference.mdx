@@ -1,0 +1,103 @@
+# Reference
+
+The complete public API, grouped by module. Types shown are simplified
+TypeScript; `Hex` is a `0x`-prefixed lowercase hex string and `bigint`
+fields are uint64 unless noted.
+
+## Core types (`@foreseer/sdk`)
+
+| Export | Shape |
+| --- | --- |
+| `Rule` | `{ v: 0, random: { type: "int", min, max, count }, win: BoolExpr, payout_bp }` |
+| `Receipt` | the 12 signed fields: `specVersion, codeVersion, epochId, betId, seedCommit, clientSeed, nonce, ruleHash, draws, win, payoutBp, timestamp` |
+| `SignedReceipt` | `{ receipt: Receipt, signature: Hex }` |
+| `EpochClose` | `{ specVersion, codeVersion, epochId, seedCommit, serverSeed, merkleRoot, receiptCount }` |
+| `Eip712Domain` | `{ name: "Foreseer", version: "0", chainId: bigint }` |
+| `ChainReader` | interface for the two onchain checks: `isTeeRegistered`, `getSeedCommit`, `getMerkleRoot` |
+| `SPEC_VERSION` | `1` |
+| `CLIENT_SEED_RE` | `^[A-Za-z0-9_-]{1,64}$` |
+
+Helpers: `toHex(bytes): Hex`, `toBytes(hex | bytes): Uint8Array`, plus
+`assertServerSeed`, `assertClientSeed`, `assertUint64`, `assertUint32`.
+
+## Derivation (`@foreseer/sdk`)
+
+| Function | What it does |
+| --- | --- |
+| `deriveBlock(serverSeed, clientSeed, nonce, blockIndex)` | one 32-byte HMAC-SHA256 block (spec section 2) |
+| `new ByteStream(serverSeed, clientSeed, nonce)` | lazy infinite stream; `take(n)` reads bytes, `bytesRead` counts them |
+| `drawInt(stream, min, max)` | one unbiased draw via rejection sampling (spec section 3) |
+| `drawInts(stream, min, max, count)` | `count` sequential draws from the same stream |
+
+## Rules (`@foreseer/sdk/rules`)
+
+| Function | What it does |
+| --- | --- |
+| `validateRule(rule)` | throws `invalid rule: ...` on any spec 4.2 violation; type-narrows on success |
+| `isValidRule(rule)` | boolean form of the same |
+| `canonicalRuleBytes(rule)` | canonical JSON bytes (sorted keys, no whitespace) |
+| `ruleHash(rule)` | SHA-256 of the canonical bytes, as `Hex` |
+| `evalWin(rule, draws)` | evaluates the win expression against drawn values |
+| `resolveOutcome(rule, serverSeed, clientSeed, nonce)` | draws plus win plus payout in one call: `{ draws, win, payoutBp }` |
+
+Presets (exported from the root): `dice({ target, mode: "over" | "under" })`
+and `coinflip()`, both paying exact 99 percent RTP.
+
+## Receipts and signatures (`@foreseer/sdk`)
+
+| Function | What it does |
+| --- | --- |
+| `domainSeparator(domain)` | EIP-712 domain separator (spec section 5.1) |
+| `receiptStructHash(receipt)` | EIP-712 struct hash of a receipt |
+| `receiptDigest(receipt, domain)` | the 32-byte digest that gets signed and becomes the Merkle leaf |
+| `signDigest(digest, privateKey)` | 65-byte `r \|\| s \|\| v` signature, low-s, deterministic |
+| `recoverSigner(digest, signature)` | recovers the signer address; rejects high-s, bad `v`, out-of-range `r`/`s` |
+| `signReceipt(receipt, domain, privateKey)` | convenience: digest plus sign, returns `SignedReceipt` |
+| `addressOfPrivateKey(key)` / `addressOfPublicKey(pub)` | Ethereum-style addresses |
+
+## Commit and epoch close (`@foreseer/sdk`)
+
+| Function | What it does |
+| --- | --- |
+| `seedCommit(serverSeed)` | `SHA256(serverSeed)` as `Hex` |
+| `verifyCommit(serverSeed, commit)` | true iff the reveal matches the commitment |
+| `epochCloseStructHash(close)` / `epochCloseDigest(close, domain)` | EIP-712 hashing of the close struct |
+| `signEpochClose(close, domain, privateKey)` | the epoch close signature |
+
+## Merkle (`@foreseer/sdk`)
+
+| Function | What it does |
+| --- | --- |
+| `new MerkleTree(leaves)` | builds once; `root`, `size`, `proof(i)` |
+| `merkleRoot(leaves)` / `merkleProof(leaves, i)` | one-shot forms |
+| `verifyMerkleProof(leaf, proof, root)` | sorted-pair keccak verification, OpenZeppelin compatible |
+| `hashPair(a, b)` | the sorted-pair parent hash |
+
+## Verification (`@foreseer/sdk/verify`)
+
+| Function | What it does |
+| --- | --- |
+| `verifyReceiptSignature(signed, domain, expectedTeeId?)` | check 1; returns `{ ok, teeId, error? }`; always pass `expectedTeeId` when you know it |
+| `verifyOutcome(receipt, rule, serverSeed)` | check 5 plus the rule hash binding; `{ ok, error? }` |
+| `verifyCommit`, `verifyMerkleProof` | re-exported checks 3 and 6 |
+| `verifyEpoch(input)` | all offline checks over a whole epoch; returns `{ ok, teeId, receiptCount, failures[] }` with per-betId attribution |
+
+## Reference TEE (`@foreseer/sdk/reference`)
+
+| Export | What it does |
+| --- | --- |
+| `new ReferenceTee(options?)` | in-memory protocol TEE; options: `privateKey`, `chainId`, `serverSeed` (fixed, for determinism), `firstEpochId`, `now` |
+| `tee.openEpoch()` | `{ epochId, seedCommit }` |
+| `tee.play({ clientSeed, rule, nonce? })` | resolves, signs, auto-increments the nonce; returns `SignedReceipt` |
+| `tee.closeEpoch()` | `{ serverSeed, merkleRoot, receiptCount, closeSignature }` |
+| `tee.domain`, `tee.teeId` | the EIP-712 domain and identity address |
+| `generateClientSeed(length?)` | WebCrypto random seed in the valid alphabet |
+| `REFERENCE_TEST_KEY`, `REFERENCE_CODE_VERSION` | the documented test constants of spec section 9 |
+
+## Error behavior
+
+Consensus functions throw `Error` with stable, human-readable messages
+(`"invalid rule: mod divisor must be a constant >= 1"`, `"high-s signature
+rejected"`). Verify-layer functions never throw for verification failures;
+they return `{ ok: false, error }` or populate `failures[]` so a bad receipt
+is data, not an exception.
