@@ -24,7 +24,8 @@ const TAIL = `],
     "timestamp": ${r.timestamp},
     "signature": "${trunc(example.signature)}"
 }`;
-const TARGET = HEAD + DRAW + TAIL;
+const LINES = (HEAD + DRAW + TAIL).split(/\r?\n/);
+const TOTAL = LINES.reduce((n, line) => n + line.length + 1, 0);
 
 const STATUS = [
     "[ EPOCH 1 · OPEN ] · seedCommit published onchain",
@@ -53,12 +54,17 @@ export default function ReceiptWidget() {
             const t0 = performance.now();
             const tick = (now: number) => {
                 const p = Math.min((now - t0) / 2200, 1);
-                const cut = Math.floor(p * TARGET.length);
-                let out = "";
-                for (let i = 0; i < TARGET.length; i++) {
-                    const ch = TARGET[i];
-                    out += i < cut || ch === "\n" || ch === " " ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
-                }
+                const cut = Math.floor(p * TOTAL);
+                let idx = 0;
+                const out = LINES.map((line) => {
+                    let s = "";
+                    for (let j = 0; j < line.length; j++, idx++) {
+                        const ch = line[j];
+                        s += idx < cut || ch === " " ? ch : GLYPHS[(Math.random() * GLYPHS.length) | 0];
+                    }
+                    idx++;
+                    return s;
+                }).join("\n");
                 setDisplay(p < 1 ? out : null);
                 if (p < 1) raf = requestAnimationFrame(tick);
             };
