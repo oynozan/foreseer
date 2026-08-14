@@ -161,30 +161,141 @@ function addRow(spun, net) {
     el("history").querySelector("tbody").prepend(row);
 }
 
-// The button survives until all four checks are final
+// The button survives every click and doubles as a refresh
 function renderVerify(cell, spun, html) {
     cell.innerHTML = `${html}<button class="verify">Verify</button>`;
     cell.querySelector(".verify").addEventListener("click", () => runVerify(cell, spun));
 }
 
+const shortHex = (h) => (typeof h === "string" && h.length > 22 ? `${h.slice(0, 12)}...${h.slice(-6)}` : h);
+const hex = (h) => `<span class="hex" title="${h}">${shortHex(h)}</span>`;
+
+function section(state, title, meaning, rows, note) {
+    const cls = state === true ? "ok" : state === false ? "bad" : "wait";
+    const mark = state === true ? "PASS" : state === false ? "FAIL" : "WAITING";
+    const body = rows.map(([k, v]) => `<div class="kv"><span>${k}</span><span>${v}</span></div>`).join("");
+    return (
+        `<section class="check ${cls}"><h3><em>${mark}</em>${title}</h3>` +
+        `<p>${meaning}</p>${body}${note ? `<p class="note">${note}</p>` : ""}</section>`
+    );
+}
+
+function proofHtml(d) {
+    const eq = (a, b) => `<b class="${a === b ? "same" : "diff"}">${a}</b> ${a === b ? "=" : "!="} <b>${b}</b>`;
+    const pending = "The secret server seed is revealed when the epoch closes. Click Verify again after the close.";
+    const parts = [];
+    parts.push(
+        section(
+            d.signer.ok,
+            "The casino signed this exact result",
+            "The whole receipt is hashed and the 65 byte signature must recover the TEE's address. " +
+                "If one digit of your result were changed, the recovered address would differ. " +
+                "The casino cannot edit or deny this bet later.",
+            [
+                ["receipt digest", hex(d.digest)],
+                ["recovered signer", hex(d.signer.recovered ?? "invalid signature")],
+                ["expected TEE", hex(d.signer.expected)],
+                ["match", d.signer.ok ? "yes" : "NO, do not trust this receipt"],
+            ],
+        ),
+    );
+    parts.push(
+        section(
+            d.commitment.ok,
+            "The outcome seed was locked before your bet",
+            "Before any bet, the casino published the SHA-256 hash of a secret seed. " +
+                "After the epoch closes it must reveal that seed, and the hash of the reveal must equal the lock. " +
+                "So the casino picked its seed before it ever saw your bet, and could not swap it after.",
+            d.closed
+                ? [
+                      ["locked before bets", hex(d.commitment.seedCommit)],
+                      ["revealed seed", hex(d.commitment.serverSeed)],
+                      ["SHA-256 of reveal", hex(d.commitment.seedHash)],
+                      ["match", d.commitment.ok ? "yes" : "NO, the seed was swapped"],
+                  ]
+                : [["locked before bets", hex(d.commitment.seedCommit)]],
+            d.closed ? "" : pending,
+        ),
+    );
+    const o = d.outcome;
+    parts.push(
+        section(
+            o.ok,
+            "Your number is pure math, recomputed here",
+            "The wheel number comes from HMAC-SHA256 over the revealed server seed, your client seed, and your " +
+                "bet number, with unbiased sampling into 0..36. Nobody picked it, and anyone can redo the math. " +
+                "This page just did, independently of the casino result.",
+            d.closed
+                ? [
+                      ["server seed", hex(d.commitment.serverSeed ?? "")],
+                      ["your client seed", `<span class="hex">${o.clientSeed}</span>`],
+                      ["nonce", String(o.nonce)],
+                      ["game rule hash", `${hex(o.ruleHash)} ${o.ruleMatches === false ? "(RULE MISMATCH)" : ""}`],
+                      ["recomputed vs wheel", eq(String(o.recomputedDraws ?? "?"), String(o.receiptDraws))],
+                      ["recomputed payout", o.recomputedWin ? `win, ${(o.recomputedPayoutBp / 10000).toFixed(3)}x` : "no win"],
+                  ]
+                : [
+                      ["your client seed", `<span class="hex">${o.clientSeed}</span>`],
+                      ["nonce", String(o.nonce)],
+                      ["game rule hash", hex(o.ruleHash)],
+                  ],
+            d.closed ? "" : pending,
+        ),
+    );
+    parts.push(
+        section(
+            d.merkle.ok,
+            "Your bet is sealed into the epoch",
+            "Every receipt in the epoch is hashed into one Merkle root, and that root is what gets anchored " +
+                "onchain. Your receipt digest proves into the root, so the bet cannot be deleted or replaced " +
+                "without changing the root everyone can see.",
+            d.closed
+                ? [
+                      ["merkle root", hex(d.merkle.merkleRoot ?? "")],
+                      ["proof hashes", String(d.merkle.proof ? d.merkle.proof.length : 0)],
+                      ["receipts sealed", String(d.merkle.receiptCount ?? "?")],
+                      ["your digest proves in", d.merkle.ok ? "yes" : "NO"],
+                  ]
+                : [],
+            d.closed ? "" : pending,
+        ),
+    );
+    const api = `${d.apiBase}/epochs/${d.epochId}`;
+    return (
+        `<div class="proof">${parts.join("")}` +
+        `<p class="proof-links">Do not take this page's word for it. The raw data is public, no key needed: ` +
+        `<a href="${api}" target="_blank">epoch</a> · ` +
+        `<a href="${api}/receipts" target="_blank">receipts</a> · ` +
+        `<a href="${api}/proof/${d.betId}" target="_blank">proof</a> · ` +
+        `<a href="${d.apiBase}/verify/${d.epochId}/${d.betId}" target="_blank">server verify</a>` +
+        ` <button class="hide-proof">Hide</button></p></div>`
+    );
+}
+
 async function runVerify(cell, spun) {
     cell.textContent = "...";
+    let data;
     try {
-        const res = await (await fetch(`/api/verify/${spun.epochId}/${spun.betId}`)).json();
-        const badge = (name, ok) => `<span class="badge ${ok ? "" : "bad"}">${name} ${ok ? "✓" : "✗"}</span>`;
-        let html = badge("signature", res.checks.signature);
-        if (res.closed) {
-            html +=
-                badge("commit", res.checks.commit) +
-                badge("outcome", res.checks.outcome) +
-                badge("merkle", res.checks.merkle);
-            cell.innerHTML = html;
-        } else {
-            renderVerify(cell, spun, `${html}<span class="badge">epoch open, full checks after close</span> `);
-        }
-    } catch {
-        renderVerify(cell, spun, `<span class="badge bad">verify failed</span> `);
+        const res = await fetch(`/api/proof/${spun.epochId}/${spun.betId}`);
+        data = await res.json();
+        if (!res.ok) throw new Error(data.error);
+    } catch (err) {
+        renderVerify(cell, spun, `<span class="badge bad">${err.message}</span> `);
+        return;
     }
+    const badge = (name, ok) => `<span class="badge ${ok ? "" : "bad"}">${name} ${ok ? "✓" : "✗"}</span>`;
+    let html = badge("signature", data.signer.ok);
+    if (data.closed) {
+        html += badge("commit", data.commitment.ok) + badge("outcome", data.outcome.ok) + badge("merkle", data.merkle.ok);
+    }
+    renderVerify(cell, spun, `${html} `);
+    const row = cell.closest("tr");
+    if (row.nextElementSibling?.classList.contains("proof-row")) row.nextElementSibling.remove();
+    const proofRow = document.createElement("tr");
+    proofRow.className = "proof-row";
+    proofRow.innerHTML = `<td colspan="6">${proofHtml(data)}</td>`;
+    proofRow.querySelector(".hide-proof").addEventListener("click", () => proofRow.remove());
+    row.after(proofRow);
 }
 
 for (const button of document.querySelectorAll(".bet")) {

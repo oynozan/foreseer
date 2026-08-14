@@ -2,7 +2,18 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
-import { CLIENT_SEED_RE, ruleHash } from "foreseer-sdk";
+import {
+    CLIENT_SEED_RE,
+    receiptDigest,
+    recoverSigner,
+    resolveOutcome,
+    ruleHash,
+    seedCommit as hashSeed,
+    toBytes,
+    toHex,
+    verifyCommit,
+    verifyMerkleProof,
+} from "foreseer-sdk";
 import { verifyReceiptSignature } from "foreseer-sdk/verify";
 import { api, apiRaw, cfg, operatorHeaders } from "./config.mjs";
 
@@ -84,6 +95,75 @@ async function spin(body) {
     };
 }
 
+// Evidence, not booleans: recompute every check and show the values
+async function proofFor(epochId, betId) {
+    const epoch = await apiRaw("GET", `/epochs/${epochId}`);
+    if (epoch.status !== 200) return { status: 404, json: { error: "unknown epoch" } };
+    const page = await apiRaw("GET", `/epochs/${epochId}/receipts?limit=1000`);
+    const entry = (page.json.receipts ?? []).find((r) => r.receipt.betId === betId);
+    if (entry === undefined) return { status: 404, json: { error: "unknown bet in this epoch" } };
+    const receipt = toReceipt(entry.receipt);
+    const digest = receiptDigest(receipt, domain);
+    let recovered = null;
+    try {
+        recovered = recoverSigner(digest, entry.signature);
+    } catch {}
+    const closed = epoch.json.closedAt !== null;
+    const out = {
+        closed,
+        epochId,
+        betId,
+        apiBase: cfg.api,
+        receipt: entry.receipt,
+        signature: entry.signature,
+        digest: toHex(digest),
+        signer: { recovered, expected: health.teeId, ok: recovered === health.teeId },
+        commitment: { seedCommit: entry.receipt.seedCommit, serverSeed: null, seedHash: null, ok: null },
+        outcome: {
+            clientSeed: entry.receipt.clientSeed,
+            nonce: entry.receipt.nonce,
+            ruleHash: entry.receipt.ruleHash,
+            receiptDraws: entry.receipt.draws,
+            recomputedDraws: null,
+            recomputedWin: null,
+            recomputedPayoutBp: null,
+            ruleMatches: null,
+            ok: null,
+        },
+        merkle: { merkleRoot: epoch.json.merkleRoot, proof: null, receiptCount: epoch.json.receiptCount, ok: null },
+    };
+    if (!closed) return { status: 200, json: out };
+    const serverSeed = epoch.json.serverSeed;
+    out.commitment.serverSeed = serverSeed;
+    out.commitment.seedHash = hashSeed(toBytes(serverSeed));
+    out.commitment.ok = verifyCommit(serverSeed, entry.receipt.seedCommit);
+    const ruleRes = await apiRaw("GET", `/rules/${entry.receipt.ruleHash}`);
+    if (ruleRes.status === 200) {
+        const rule = ruleRes.json.rule;
+        out.outcome.ruleMatches = ruleHash(rule) === entry.receipt.ruleHash;
+        const redo = resolveOutcome(rule, toBytes(serverSeed), entry.receipt.clientSeed, BigInt(entry.receipt.nonce));
+        out.outcome.recomputedDraws = redo.draws;
+        out.outcome.recomputedWin = redo.win;
+        out.outcome.recomputedPayoutBp = redo.payoutBp;
+        out.outcome.ok =
+            out.outcome.ruleMatches &&
+            JSON.stringify(redo.draws) === JSON.stringify(entry.receipt.draws) &&
+            redo.win === entry.receipt.win &&
+            redo.payoutBp === entry.receipt.payoutBp;
+    }
+    const proofRes = await apiRaw("GET", `/epochs/${epochId}/proof/${betId}`);
+    if (proofRes.status === 200) {
+        out.merkle.merkleRoot = proofRes.json.merkleRoot;
+        out.merkle.proof = proofRes.json.proof;
+        out.merkle.ok = verifyMerkleProof(
+            digest,
+            proofRes.json.proof.map(toBytes),
+            toBytes(proofRes.json.merkleRoot),
+        );
+    }
+    return { status: 200, json: out };
+}
+
 const staticDir = fileURLToPath(new URL("static", import.meta.url));
 const p5Path = fileURLToPath(new URL("node_modules/p5/lib/p5.min.js", import.meta.url));
 const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" };
@@ -140,6 +220,11 @@ const server = createServer(async (req, res) => {
         const verifyMatch = url.pathname.match(/^\/api\/verify\/(\d+)\/(\d+)$/);
         if (req.method === "GET" && verifyMatch) {
             const out = await apiRaw("GET", `/verify/${verifyMatch[1]}/${verifyMatch[2]}`);
+            return send(res, out.status, out.json);
+        }
+        const proofMatch = url.pathname.match(/^\/api\/proof\/(\d+)\/(\d+)$/);
+        if (req.method === "GET" && proofMatch) {
+            const out = await proofFor(Number(proofMatch[1]), Number(proofMatch[2]));
             return send(res, out.status, out.json);
         }
         if (req.method === "GET") return serveStatic(res, url.pathname);
