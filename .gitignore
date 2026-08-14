@@ -19,3 +19,4 @@ coverage/
 Thumbs.db
 
 # spec/vectors/ is a deliverable and MUST stay committed
+WALLETS.local.md
