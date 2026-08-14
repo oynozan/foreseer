@@ -8,6 +8,9 @@ import { rpcChain } from "./wallet";
 import type { Hex } from "foreseer-sdk";
 
 async function bootstrap(): Promise<void> {
+    try {
+        process.loadEnvFile();
+    } catch {}
     const port = Number(process.env.PORT ?? 8787);
     const dbPath = process.env.FORESEER_DB ?? "data/foreseer.db";
     const epochSeconds = Number(process.env.FORESEER_EPOCH_SECONDS ?? 300);

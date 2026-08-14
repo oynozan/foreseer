@@ -24,12 +24,22 @@ treasury. Nothing is mocked: every epoch, bet, and payment is real.
 
 ## Run it
 
-Start Foreseer with a treasury (payments land here):
+Start Foreseer in paid mode. The server loads `server/.env`, so set it once:
 
 ```sh
-cd ../server
-FORESEER_TREASURY=0x... FORESEER_PRICE_PER_PLAY_WEI=10000000000000000 pnpm start
+# server/.env
+FORESEER_TREASURY=0x...your treasury wallet...
+FORESEER_PRICE_PER_PLAY_WEI=10000000000000000
+FORESEER_EPOCH_SECONDS=60
 ```
+
+```sh
+cd ../server && pnpm dev
+```
+
+Without a funded balance every spin is refused with a 402: an operator
+cannot use Foreseer without paying first. Without `FORESEER_TREASURY` the
+server runs in free dev mode instead (no payments, no gate).
 
 Then in `demo/`:
 

@@ -43,9 +43,12 @@ function flr(wei) {
 async function refreshState() {
     try {
         const state = await (await fetch("/api/state")).json();
+        const price = BigInt(state.balance.pricePerPlayWei);
+        const spins = price > 0n ? `, ${BigInt(state.balance.balanceWei) / price} paid spins left` : ", free dev mode";
         el("fair-strip").textContent =
             `epoch ${state.epoch.epochId} commit ${state.epoch.seedCommit.slice(0, 18)}... ` +
-            `| TEE ${state.teeId} | chain ${state.chainId} | casino balance ${flr(state.balance.balanceWei)} C2FLR`;
+            `| TEE ${state.teeId} | chain ${state.chainId} ` +
+            `| casino balance ${flr(state.balance.balanceWei)} C2FLR${spins}`;
     } catch {
         el("fair-strip").textContent = "casino backend unreachable";
     }
@@ -183,8 +186,10 @@ function section(state, title, meaning, rows, note) {
 function proofHtml(d) {
     const eq = (a, b) => `<b class="${a === b ? "same" : "diff"}">${a}</b> ${a === b ? "=" : "!="} <b>${b}</b>`;
     const pending =
-        'The secret server seed is revealed when the epoch closes: <span class="countdown">soon</span>. ' +
-        "This panel rechecks automatically.";
+        'The seed is revealed when the epoch closes: <span class="countdown">soon</span>. ' +
+        "This panel rechecks automatically. Why the wait? One seed drives every bet in the epoch, so " +
+        "revealing it early would let players compute future spins before betting. Your signed receipt " +
+        "above already locks the casino in; the reveal only lets you recompute it.";
     const parts = [];
     parts.push(
         section(
