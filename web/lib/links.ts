@@ -1,4 +1,4 @@
-// placeholder docs host, set real URLs at deploy
+// docs host; verifier and dashboard are local routes
 export const DOCS_BASE = "https://docs.foreseer.net";
 
 export const DOCS_URL = DOCS_BASE + "/";
