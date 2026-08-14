@@ -116,10 +116,6 @@ export function restAfterSettle(targetCell: number): number {
     return GEO.baseCell + (((targetCell % POCKET_COUNT) + POCKET_COUNT) % POCKET_COUNT);
 }
 
-export function payoutMultiplier(bp: number): string {
-    return (bp / 10000).toFixed(4).replace(/0+$/, "").replace(/\.$/, "");
-}
-
 export function resultLine(pocket: number, betId: bigint, epochId: bigint): string {
     return `Pocket ${pocket}. Determined before you spun. Spin ${betId} of epoch ${epochId}.`;
 }

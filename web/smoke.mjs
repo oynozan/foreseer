@@ -102,14 +102,16 @@ if (existsSync(htmlPath)) {
     fail("no prerendered index.html, run pnpm build first");
 }
 
-// roulette core, rule hash and landing math, needs the tsx runner
+// game cores, rule hashes and landing math, need the tsx runner
 const tsx = join(root, "..", "packages", "ts", "node_modules", ".bin", "tsx");
 if (existsSync(tsx) || existsSync(tsx + ".CMD")) {
-    const run = spawnSync(tsx, [join(root, "scripts", "roulette-test.mjs")], { shell: true, encoding: "utf8" });
-    if (run.status === 0) ok("roulette core test green");
-    else fail("roulette core test failed:\n" + (run.stdout ?? "") + (run.stderr ?? ""));
+    for (const game of ["roulette", "coinflip"]) {
+        const run = spawnSync(tsx, [join(root, "scripts", `${game}-test.mjs`)], { shell: true, encoding: "utf8" });
+        if (run.status === 0) ok(`${game} core test green`);
+        else fail(`${game} core test failed:\n` + (run.stdout ?? "") + (run.stderr ?? ""));
+    }
 } else {
-    fail("tsx runner missing, cannot run the roulette core test");
+    fail("tsx runner missing, cannot run the game core tests");
 }
 
 // the sdk must ship, but never in the landing page's initial bundle

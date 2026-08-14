@@ -1,7 +1,7 @@
 "use client";
 
 import { forwardRef, useMemo } from "react";
-import { GEO, ORDER, POCKET_COUNT, pocketAtCell, toneOf } from "@/lib/roulette";
+import { GEO, ORDER, pocketAtCell, toneOf } from "@/lib/roulette";
 
 const TONE_CLASS: Record<string, string> = {
     green: "bg-mint text-mint-ink border-mint",
@@ -51,4 +51,3 @@ const RouletteStrip = forwardRef<HTMLDivElement>(function RouletteStrip(_props, 
 });
 
 export default RouletteStrip;
-export { POCKET_COUNT };

@@ -1,10 +1,17 @@
-import { MAX_SPINS, WHEEL_RULE } from "@/lib/roulette";
+import type { Rule } from "foreseer-sdk";
 
-export interface SpinRecord {
+export interface DemoConfig {
+    key: string;
+    rule: Rule;
+    maxPlays: number;
+    outcomeLabel: string;
+}
+
+export interface PlayRecord {
     epochId: bigint;
     betId: bigint;
     nonce: bigint;
-    pocket: number;
+    draw: number;
     win: boolean;
     payoutBp: number;
     signature: string;
@@ -32,13 +39,13 @@ export interface EpochView {
     seedCommit: string;
     clientSeed: string;
     teeId: string;
-    spins: SpinRecord[];
+    plays: PlayRecord[];
     reveal: RevealView | null;
 }
 
 export interface TeeHandle {
     snapshot(): EpochView;
-    spin(): SpinRecord;
+    play(): PlayRecord;
     reveal(): RevealView;
     startNextEpoch(): EpochView;
 }
@@ -49,9 +56,9 @@ type Loaded = {
     verify: typeof import("foreseer-sdk/verify");
 };
 
-let pending: Promise<TeeHandle> | null = null;
+const pending = new Map<string, Promise<TeeHandle>>();
 
-async function build(): Promise<TeeHandle> {
+async function build(config: DemoConfig): Promise<TeeHandle> {
     const [core, reference, verify]: [Loaded["core"], Loaded["reference"], Loaded["verify"]] = await Promise.all([
         import("foreseer-sdk"),
         import("foreseer-sdk/reference"),
@@ -63,7 +70,7 @@ async function build(): Promise<TeeHandle> {
 
     let epochId: bigint = BigInt(0);
     let seedCommit: `0x${string}` = "0x";
-    let spins: SpinRecord[] = [];
+    let plays: PlayRecord[] = [];
     let signed: ReturnType<typeof tee.play>[] = [];
     let reveal: RevealView | null = null;
     let open = false;
@@ -74,42 +81,42 @@ async function build(): Promise<TeeHandle> {
         const started = tee.openEpoch();
         epochId = started.epochId;
         seedCommit = started.seedCommit;
-        spins = [];
+        plays = [];
         signed = [];
         reveal = null;
         open = true;
     }
 
     function snapshot(): EpochView {
-        return { epochId, seedCommit, clientSeed, teeId: tee.teeId, spins: [...spins], reveal };
+        return { epochId, seedCommit, clientSeed, teeId: tee.teeId, plays: [...plays], reveal };
     }
 
     openEpoch();
 
     return {
         snapshot,
-        spin() {
+        play() {
             if (!open) throw new Error("start a new epoch first");
-            if (spins.length >= MAX_SPINS) throw new Error("epoch full, reveal to continue");
-            const bet = tee.play({ clientSeed, rule: WHEEL_RULE });
+            if (plays.length >= config.maxPlays) throw new Error("epoch full, reveal to continue");
+            const bet = tee.play({ clientSeed, rule: config.rule });
             const sigCheck = verify.verifyReceiptSignature(bet, tee.domain, tee.teeId);
-            const record: SpinRecord = {
+            const record: PlayRecord = {
                 epochId: bet.receipt.epochId,
                 betId: bet.receipt.betId,
                 nonce: bet.receipt.nonce,
-                pocket: bet.receipt.draws[0],
+                draw: bet.receipt.draws[0],
                 win: bet.receipt.win,
                 payoutBp: bet.receipt.payoutBp,
                 signature: bet.signature,
                 signatureOk: sigCheck.ok,
             };
             signed.push(bet);
-            spins.push(record);
+            plays.push(record);
             return record;
         },
         reveal() {
             if (!open) throw new Error("no open epoch");
-            if (signed.length === 0) throw new Error("spin at least once before revealing");
+            if (signed.length === 0) throw new Error("play at least once before revealing");
             const closed = tee.closeEpoch();
             open = false;
 
@@ -126,9 +133,9 @@ async function build(): Promise<TeeHandle> {
             const commitOk = verify.verifyCommit(closed.serverSeed, seedCommit);
             let outcomeOk = true;
             for (const s of signed) {
-                if (!verify.verifyOutcome(s.receipt, WHEEL_RULE, closed.serverSeed).ok) outcomeOk = false;
+                if (!verify.verifyOutcome(s.receipt, config.rule, closed.serverSeed).ok) outcomeOk = false;
             }
-            const signatureOk = spins.every((s) => s.signatureOk);
+            const signatureOk = plays.every((s) => s.signatureOk);
 
             const checks: CheckRow[] = [
                 {
@@ -145,9 +152,9 @@ async function build(): Promise<TeeHandle> {
                 },
                 {
                     key: "outcome",
-                    label: "Pockets recompute from the seed",
+                    label: config.outcomeLabel,
                     ok: outcomeOk,
-                    detail: `all ${spins.length} identical`,
+                    detail: `${plays.length} recomputed`,
                 },
                 {
                     key: "merkle",
@@ -174,7 +181,11 @@ async function build(): Promise<TeeHandle> {
     };
 }
 
-export function ensureTee(): Promise<TeeHandle> {
-    if (pending === null) pending = build();
-    return pending;
+export function ensureTee(config: DemoConfig): Promise<TeeHandle> {
+    let handle = pending.get(config.key);
+    if (!handle) {
+        handle = build(config);
+        pending.set(config.key, handle);
+    }
+    return handle;
 }

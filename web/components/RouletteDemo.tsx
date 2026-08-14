@@ -1,13 +1,16 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
-import RouletteProof from "@/components/RouletteProof";
+import { useCallback, useEffect, useRef } from "react";
+import ProofPanel from "@/components/ProofPanel";
 import RouletteStrip from "@/components/RouletteStrip";
+import { MUTED, PRIMARY, SECONDARY } from "@/lib/demo-ui";
 import {
     GEO,
     MAX_SPINS,
     SPIN_EASE,
     SPIN_MS,
+    WHEEL_RULE,
+    WHEEL_RULE_HASH,
     cellUnderMarker,
     pocketAtCell,
     restAfterSettle,
@@ -15,14 +18,15 @@ import {
     spinTarget,
     translateXFor,
 } from "@/lib/roulette";
-import { ensureTee, type EpochView, type SpinRecord, type TeeHandle } from "@/lib/roulette-tee";
+import type { PlayRecord } from "@/lib/demo-tee";
+import { useDemoEpoch } from "@/lib/use-demo-epoch";
 
-type Phase = "cold" | "arming" | "ready" | "spinning" | "settled" | "revealing" | "revealed" | "error";
-
-const PILL = "rounded-full px-6 py-3 text-[14px] font-medium transition-colors";
-const PRIMARY = `${PILL} bg-primary text-white hover:bg-primary-hover`;
-const SECONDARY = `${PILL} border border-line bg-white text-ink hover:border-ink`;
-const MUTED = `${PILL} border border-line bg-white text-muted`;
+const CONFIG = {
+    key: "roulette",
+    rule: WHEEL_RULE,
+    maxPlays: MAX_SPINS,
+    outcomeLabel: "Pockets recompute from the seed",
+};
 
 function geometry(): { pitch: number; cellWidth: number } {
     const narrow = typeof window !== "undefined" && window.innerWidth < 640;
@@ -30,20 +34,10 @@ function geometry(): { pitch: number; cellWidth: number } {
 }
 
 export default function RouletteDemo() {
-    const sectionRef = useRef<HTMLDivElement>(null);
     const cellsRef = useRef<HTMLDivElement>(null);
-    const teeRef = useRef<TeeHandle | null>(null);
     const animRef = useRef<Animation | null>(null);
-    const aliveRef = useRef(true);
-    const busyRef = useRef(false);
     const restCellRef = useRef<number>(GEO.initialCell);
     const restJitterRef = useRef<number>(0);
-
-    const [phase, setPhase] = useState<Phase>("cold");
-    const [view, setView] = useState<EpochView | null>(null);
-    const [last, setLast] = useState<SpinRecord | null>(null);
-    const [announcement, setAnnouncement] = useState("");
-    const [error, setError] = useState("");
 
     const applyRest = useCallback(() => {
         const el = cellsRef.current;
@@ -56,170 +50,68 @@ export default function RouletteDemo() {
         })}px,0,0)`;
     }, []);
 
-    useEffect(() => {
-        aliveRef.current = true;
-        applyRest();
-        return () => {
-            aliveRef.current = false;
-            animRef.current?.cancel();
-        };
-    }, [applyRest]);
-
-    const arm = useCallback(async () => {
-        if (teeRef.current) return teeRef.current;
-        setPhase((p) => (p === "cold" ? "arming" : p));
-        try {
-            const handle = await ensureTee();
-            if (!aliveRef.current) return null;
-            teeRef.current = handle;
-            setView(handle.snapshot());
-            setPhase((p) => (p === "revealed" ? p : "ready"));
-            return handle;
-        } catch (err) {
-            if (!aliveRef.current) return null;
-            setError(err instanceof Error ? err.message : "could not start the engine");
-            setPhase("error");
-            return null;
-        }
-    }, []);
-
-    useEffect(() => {
-        const node = sectionRef.current;
-        if (!node) return;
-        const io = new IntersectionObserver(
-            (entries) => {
-                if (entries[0]?.isIntersecting) {
-                    io.disconnect();
-                    void arm();
-                }
-            },
-            { rootMargin: "400px 0px" },
-        );
-        io.observe(node);
-        return () => io.disconnect();
-    }, [arm]);
-
-    const settle = useCallback(
-        (record: SpinRecord, targetCell: number, jitter: number) => {
+    const park = useCallback(
+        (record: PlayRecord, targetCell: number, jitter: number) => {
             restCellRef.current = restAfterSettle(targetCell);
             restJitterRef.current = jitter;
             applyRest();
-            const el = cellsRef.current;
-            if (el) {
-                const geo = geometry();
-                const landed = pocketAtCell(
-                    Math.round(
-                        cellUnderMarker({
-                            translateX: translateXFor({ cell: restCellRef.current, jitter, ...geo }),
-                            ...geo,
-                        }),
-                    ),
-                );
-                // The pixels must agree with the receipt, always.
-                if (landed !== record.pocket) {
-                    restJitterRef.current = 0;
-                    restCellRef.current = restAfterSettle(targetCell);
-                    applyRest();
-                }
+            const geo = geometry();
+            const landed = pocketAtCell(
+                Math.round(
+                    cellUnderMarker({
+                        translateX: translateXFor({ cell: restCellRef.current, jitter, ...geo }),
+                        ...geo,
+                    }),
+                ),
+            );
+            // The pixels must agree with the receipt, always.
+            if (landed !== record.draw) {
+                restJitterRef.current = 0;
+                applyRest();
             }
-            busyRef.current = false;
-            if (!aliveRef.current) return;
-            setLast(record);
-            setView(teeRef.current?.snapshot() ?? null);
-            setAnnouncement(resultLine(record.pocket, record.betId, record.epochId));
-            setPhase("settled");
         },
         [applyRest],
     );
 
-    const onSpin = useCallback(async () => {
-        // the ref guards across the await, state cannot
-        if (busyRef.current) return;
-        if (phase === "spinning" || phase === "revealing" || phase === "revealed") return;
-        busyRef.current = true;
+    const animate = useCallback(
+        (record: PlayRecord) => {
+            const el = cellsRef.current;
+            if (!el) return;
+            const startCell = restCellRef.current;
+            const { targetCell, jitter } = spinTarget({
+                startCell,
+                pocket: record.draw,
+                signature: record.signature,
+            });
+            const geo = geometry();
+            const fromX = translateXFor({ cell: startCell, jitter: restJitterRef.current, ...geo });
+            const toX = translateXFor({ cell: targetCell, jitter, ...geo });
+            animRef.current?.cancel();
 
-        const handle = teeRef.current ?? (await arm());
-        if (!handle || !aliveRef.current) {
-            busyRef.current = false;
-            return;
-        }
-
-        let record: SpinRecord;
-        try {
-            record = handle.spin();
-        } catch (err) {
-            busyRef.current = false;
-            setError(err instanceof Error ? err.message : "spin failed");
-            setPhase("error");
-            return;
-        }
-
-        setPhase("spinning");
-        setLast(null);
-        const startCell = restCellRef.current;
-        const { targetCell, jitter } = spinTarget({
-            startCell,
-            pocket: record.pocket,
-            signature: record.signature,
-        });
-        const geo = geometry();
-        const fromX = translateXFor({ cell: startCell, jitter: restJitterRef.current, ...geo });
-        const toX = translateXFor({ cell: targetCell, jitter, ...geo });
-
-        const el = cellsRef.current;
-        if (!el) {
-            busyRef.current = false;
-            return;
-        }
-        animRef.current?.cancel();
-
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-            settle(record, targetCell, jitter);
-            return;
-        }
-
-        const anim = el.animate(
-            [{ transform: `translate3d(${fromX}px,0,0)` }, { transform: `translate3d(${toX}px,0,0)` }],
-            { duration: SPIN_MS, easing: SPIN_EASE, fill: "none" },
-        );
-        animRef.current = anim;
-        anim.finished
-            .then(() => {
-                if (aliveRef.current) settle(record, targetCell, jitter);
-            })
-            .catch(() => {});
-    }, [arm, phase, settle, view]);
-
-    const onReveal = useCallback(() => {
-        const handle = teeRef.current;
-        if (!handle || (view?.spins.length ?? 0) === 0) return;
-        setPhase("revealing");
-        try {
-            const result = handle.reveal();
-            setView(handle.snapshot());
-            setAnnouncement(
-                `Epoch closed. ${result.checks.filter((c) => c.ok).length} of ${result.checks.length} checks green across ${result.receiptCount} receipts.`,
+            if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+                park(record, targetCell, jitter);
+                return;
+            }
+            const anim = el.animate(
+                [{ transform: `translate3d(${fromX}px,0,0)` }, { transform: `translate3d(${toX}px,0,0)` }],
+                { duration: SPIN_MS, easing: SPIN_EASE, fill: "none" },
             );
-            setPhase("revealed");
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "reveal failed");
-            setPhase("error");
-        }
-    }, [view]);
+            animRef.current = anim;
+            return anim.finished.then(() => park(record, targetCell, jitter));
+        },
+        [park],
+    );
 
-    const onNextEpoch = useCallback(() => {
-        const handle = teeRef.current;
-        if (!handle) return;
-        setView(handle.startNextEpoch());
-        setLast(null);
-        setAnnouncement("");
-        setPhase("ready");
-    }, []);
+    const { sectionRef, phase, view, last, error, full, play, reveal, nextEpoch } = useDemoEpoch(CONFIG, animate);
 
-    const spins = view?.spins ?? [];
-    const full = spins.length >= MAX_SPINS;
-    const spinning = phase === "spinning";
+    useEffect(() => {
+        applyRest();
+        return () => animRef.current?.cancel();
+    }, [applyRest]);
+
+    const spinning = phase === "playing";
     const canSpin = !spinning && phase !== "revealing" && phase !== "revealed" && !full;
+    const canReveal = (view?.plays.length ?? 0) > 0 && phase !== "revealed" && !spinning;
 
     return (
         <div ref={sectionRef} data-demo="roulette" className="pt-12" aria-busy={spinning}>
@@ -228,10 +120,8 @@ export default function RouletteDemo() {
                     The pocket was fixed <span className="text-primary">before you spun.</span>
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-muted">
-                    A demand-based wheel: every spin is yours alone, resolved the moment you ask for it rather than on
-                    a shared timer. The seed behind all fifteen pockets was committed before your first spin, so each
-                    result was already determined and nobody could steer it. Reveal the seed and recompute every pocket
-                    yourself.
+                    The wheel spins on demand, not on a shared timer. Its seed was committed before your first spin, so
+                    every pocket was already decided.
                 </p>
             </div>
 
@@ -239,61 +129,48 @@ export default function RouletteDemo() {
                 <RouletteStrip ref={cellsRef} />
             </div>
 
-            <div className="mt-6 flex flex-wrap items-center justify-between gap-4">
-                <p role="status" aria-live="polite" aria-atomic="true" className="min-h-6 text-[14px]">
-                    {last ? (
-                        <>
-                            <span data-result-pocket={last.pocket} className="chip tech mr-2 border-ink text-ink">
-                                pocket {last.pocket}
-                            </span>
-                            <span className="text-muted">determined before you spun, receipt below.</span>
-                        </>
-                    ) : (
-                        <span className="text-muted">
-                            {phase === "revealed"
-                                ? "Epoch closed. Every pocket recomputed below."
-                                : spinning
-                                  ? "Spinning."
-                                  : "The seed behind these fifteen pockets is already fixed. You are looking at its SHA-256."}
-                        </span>
-                    )}
-                </p>
-                <span className="flex flex-wrap items-center gap-3">
-                    <span className="tech text-[11px] text-muted">
-                        {spins.length} / {MAX_SPINS} spins
-                    </span>
-                    {phase === "revealed" ? (
-                        <button type="button" onClick={onNextEpoch} className={PRIMARY}>
-                            Start a new epoch
-                        </button>
-                    ) : (
-                        <button
-                            type="button"
-                            onClick={() => void onSpin()}
-                            aria-disabled={!canSpin}
-                            className={canSpin ? PRIMARY : MUTED}
-                        >
-                            {full ? "Epoch full" : spinning ? "Spinning" : "Spin the wheel"}
-                        </button>
-                    )}
+            <p
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                className="sr-only"
+                data-result-pocket={last ? last.draw : undefined}
+            >
+                {phase === "revealed"
+                    ? "Epoch closed. Every pocket recomputed below."
+                    : last
+                      ? resultLine(last.draw, last.betId, last.epochId)
+                      : ""}
+            </p>
+
+            <div className="mt-6 flex flex-wrap items-center gap-3">
+                {phase === "revealed" ? (
+                    <button type="button" onClick={nextEpoch} className={PRIMARY}>
+                        Start a new epoch
+                    </button>
+                ) : (
                     <button
                         type="button"
-                        onClick={onReveal}
-                        aria-disabled={spins.length === 0 || phase === "revealed" || spinning}
-                        className={spins.length > 0 && phase !== "revealed" && !spinning ? SECONDARY : MUTED}
+                        onClick={() => void play()}
+                        aria-disabled={!canSpin}
+                        className={canSpin ? PRIMARY : MUTED}
                     >
-                        Reveal and verify
+                        {full ? "Epoch full" : spinning ? "Spinning" : "Spin the wheel"}
                     </button>
-                </span>
+                )}
+                <button
+                    type="button"
+                    onClick={reveal}
+                    aria-disabled={!canReveal}
+                    className={canReveal ? SECONDARY : MUTED}
+                >
+                    Reveal and verify
+                </button>
             </div>
 
-            {phase === "error" && (
-                <div className="check red mt-6">
-                    <span className="dot">&#9679;</span> {error}
-                </div>
-            )}
+            {phase === "error" && <p className="mt-4 text-[13px] text-red">{error}</p>}
 
-            <RouletteProof view={view} />
+            <ProofPanel view={view} ruleHash={WHEEL_RULE_HASH} />
         </div>
     );
 }

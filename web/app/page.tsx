@@ -1,5 +1,6 @@
 import Band from "@/components/Band";
 import CodeSection from "@/components/CodeSection";
+import CoinflipDemo from "@/components/CoinflipDemo";
 import EconomySection from "@/components/EconomySection";
 import Faq from "@/components/Faq";
 import FlareSection from "@/components/FlareSection";
@@ -15,28 +16,43 @@ export default function Home() {
             <Nav home />
             <main>
                 <Hero />
-                <Band id="demo-roulette" meta={["[ 01 / 07 ]", "GAMES // ROULETTE //"]}>
+                <Band id="demo-roulette" meta={["[ 01 / 08 ]", "GAMES // ROULETTE //"]}>
                     <RouletteDemo />
                 </Band>
-                <Band id="demo-games" meta={["[ 02 / 07 ]", "GAMES // COINFLIP + DICE //"]}>
-                    <div className="grid gap-4 pt-12 md:grid-cols-2">
-                        <div id="demo-coinflip" className="h-64" data-demo="coinflip" />
-                        <div id="demo-dice" className="h-64" data-demo="dice" />
+                <div className="band">
+                    <div className="col grid md:grid-cols-2">
+                        <section id="demo-coinflip" className="pb-6 md:pr-12">
+                            <div className="meta tech" aria-hidden="true">
+                                <span>[ 02 / 08 ]</span>
+                                <span>GAMES // COINFLIP //</span>
+                            </div>
+                            <CoinflipDemo />
+                        </section>
+                        <section
+                            id="demo-dice"
+                            data-demo="dice"
+                            className="mt-10 border-t border-line pb-6 md:mt-0 md:border-t-0 md:border-l md:pl-12"
+                        >
+                            <div className="meta tech" aria-hidden="true">
+                                <span>[ 03 / 08 ]</span>
+                                <span>GAMES // DICE //</span>
+                            </div>
+                        </section>
                     </div>
-                </Band>
-                <Band id="code" meta={["[ 03 / 07 ]", "INTEGRATE // THREE WAYS IN //"]}>
+                </div>
+                <Band id="code" meta={["[ 04 / 08 ]", "INTEGRATE // THREE WAYS IN //"]}>
                     <CodeSection />
                 </Band>
-                <Band id="how-it-works" meta={["[ 04 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]}>
+                <Band id="how-it-works" meta={["[ 05 / 08 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]}>
                     <HowItWorks />
                 </Band>
-                <Band id="flare" meta={["[ 05 / 07 ]", "FLARE // CONFIDENTIAL COMPUTE //"]}>
+                <Band id="flare" meta={["[ 06 / 08 ]", "FLARE // CONFIDENTIAL COMPUTE //"]}>
                     <FlareSection />
                 </Band>
-                <Band id="economy" meta={["[ 06 / 07 ]", "ECONOMY // OPERATORS //"]}>
+                <Band id="economy" meta={["[ 07 / 08 ]", "ECONOMY // OPERATORS //"]}>
                     <EconomySection />
                 </Band>
-                <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]}>
+                <Band id="faq" meta={["[ 08 / 08 ]", "FAQ // STATED HONESTLY //"]}>
                     <Faq />
                 </Band>
             </main>
