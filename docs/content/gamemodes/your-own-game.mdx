@@ -1,0 +1,279 @@
+import { Callout, Steps } from "nextra/components";
+
+# Your own game
+
+The presets have no privileges. `coinflip()` returns an object, and if you
+write that object yourself you get the same guarantees: the TEE runs it, the
+verifier checks it, and the player can recompute it. This page builds a
+custom game by taking the coinflip template and changing one number at a
+time, so you can see exactly what each field controls.
+
+## A game is four fields
+
+```ts
+{
+    v: 0,                                                  // format version, always 0
+    random: { type: "int", min: 0, max: 1, count: 1 },     // what to draw
+    win: { op: "==", l: { r: 0 }, r: { c: 1 } },           // when the player wins
+    payout_bp: 19800,                                      // what a win returns
+}
+```
+
+| Field | Controls | Legal values |
+| --- | --- | --- |
+| `v` | the rule format version | exactly `0` |
+| `random.type` | the draw kind | exactly `"int"` |
+| `random.min`, `random.max` | the outcome space, **both ends included** | uint32, `min <= max` |
+| `random.count` | how many numbers are drawn | 1 to 16 |
+| `win` | the condition, an expression over the draws | see the grammar below |
+| `payout_bp` | total return on the stake in basis points | uint32 |
+
+No other keys are allowed, and no floats anywhere. That strictness is the
+point: the rule is hashed into every receipt, so it has to mean exactly one
+thing to every implementation.
+
+## Take coinflip to 2x
+
+The preset pays 19800. Here is the same game paying double:
+
+```ts
+const coinflip2x = {
+    v: 0,
+    random: { type: "int", min: 0, max: 1, count: 1 },
+    win: { op: "==", l: { r: 0 }, r: { c: 1 } },
+    payout_bp: 20000,
+};
+```
+
+One number changed. Its hash is now
+`0xf680d387359a2a1d0b63a5b8692a90be8e5c33afa465132dc2baad6811976f4c`,
+a completely different rule as far as the protocol is concerned, and the
+canonical form that gets hashed is:
+
+```json
+{"payout_bp":20000,"random":{"count":1,"max":1,"min":0,"type":"int"},"v":0,"win":{"l":{"r":0},"op":"==","r":{"c":1}}}
+```
+
+<Callout type="warning">
+    A fair coin paying 2x has **no house edge at all**: the player wins half the time and doubles, so the return to
+    player is exactly 100 percent. You will not make money on this game, and because you still pay Foreseer a fee per
+    play, you will slowly lose. That is fine for a free roll, a welcome promo, or a demo. It is not a table.
+</Callout>
+
+Payout and edge are the same dial seen from two sides:
+
+| `payout_bp` | Multiplier | Return to player | Who profits |
+| --- | --- | --- | --- |
+| 19800 | 1.98x | 99.00% | house keeps 1% |
+| 20000 | 2.0x | 100.00% | nobody, it is a wash |
+| 21000 | 2.1x | 105.00% | the player, you are paying them to play |
+
+## What each argument does
+
+### `random.min` and `random.max`: the odds
+
+The range is inclusive, so the outcome count is `max - min + 1`. Widening it
+makes a fixed target rarer. Take the 2x coin and make it a six sided die
+that only pays on the top face:
+
+```ts
+const die = {
+    v: 0,
+    random: { type: "int", min: 0, max: 5, count: 1 }, // six outcomes now
+    win: { op: "==", l: { r: 0 }, r: { c: 5 } },
+    payout_bp: 20000, // unchanged, and now badly wrong
+};
+```
+
+The player now wins 1 time in 6 and still gets 2x, so the return to player
+collapses from 100 percent to **33.33 percent**. Nothing warned you: the
+rule is perfectly valid, it is just a terrible deal. Priced properly at 99
+percent the same game pays `floor(9900 * 6 / 1) = 59400`, or 5.94x.
+
+<Callout type="info">
+    This is the single most important thing to understand about custom games. The engine guarantees the draw is fair and
+    the rule is honest. It does not guarantee your pricing is sane. That part is yours.
+</Callout>
+
+### `random.count`: how many numbers
+
+Ask for more than one draw and `win` can reference each of them by index:
+`{ r: 0 }` is the first, `{ r: 1 }` the second, and so on up to
+`count - 1`. Two coins, player needs both heads:
+
+```ts
+const bothHeads = {
+    v: 0,
+    random: { type: "int", min: 0, max: 1, count: 2 },
+    win: {
+        op: "and",
+        args: [
+            { op: "==", l: { r: 0 }, r: { c: 1 } },
+            { op: "==", l: { r: 1 }, r: { c: 1 } },
+        ],
+    },
+    payout_bp: 39600, // 1 of 4 outcomes wins, floor(9900 * 4 / 1)
+};
+```
+
+Four outcomes, one wins, 25 percent chance at 3.96x, back to a 99 percent
+return.
+
+### `win`: the condition
+
+Swap `and` for `or` and the same two coins become a much easier game:
+
+```ts
+const eitherHead = {
+    v: 0,
+    random: { type: "int", min: 0, max: 1, count: 2 },
+    win: {
+        op: "or",
+        args: [
+            { op: "==", l: { r: 0 }, r: { c: 1 } },
+            { op: "==", l: { r: 1 }, r: { c: 1 } },
+        ],
+    },
+    payout_bp: 13200, // 3 of 4 outcomes win, floor(9900 * 4 / 3)
+};
+```
+
+75 percent chance at 1.32x. The full grammar you can use inside `win`:
+
+| Piece | Form | Meaning |
+| --- | --- | --- |
+| draw | `{ r: 0 }` | the value of draw 0 |
+| constant | `{ c: 7 }` | the number 7 |
+| remainder | `{ op: "mod", l: { r: 0 }, r: { c: 3 } }` | draw 0 modulo 3, divisor must be a constant of at least 1 |
+| comparison | `{ op: ">", l: ..., r: ... }` | also `>=`, `<`, `<=`, `==`, `!=` |
+| all of | `{ op: "and", args: [a, b, ...] }` | needs **two or more** arguments |
+| any of | `{ op: "or", args: [a, b, ...] }` | needs **two or more** arguments |
+| negation | `{ op: "not", arg: a }` | takes exactly one argument |
+
+Expressions nest up to 32 levels deep. There are no loops, no variables and
+no functions, and that is deliberate: a rule must always terminate and
+always mean the same thing everywhere.
+
+## Check your own math
+
+Small outcome spaces can be enumerated exactly, so there is no excuse for
+guessing your return to player. Copy this:
+
+```ts
+import { evalWin } from "foreseer-sdk/rules";
+
+function stats(rule) {
+    const { min, max, count } = rule.random;
+    let total = 0;
+    let wins = 0;
+    const walk = (draws) => {
+        if (draws.length === count) {
+            total++;
+            if (evalWin(rule, draws)) wins++;
+            return;
+        }
+        for (let n = min; n <= max; n++) walk([...draws, n]);
+    };
+    walk([]);
+    return { total, wins, chance: wins / total, rtp: (wins * rule.payout_bp) / (total * 10000) };
+}
+
+stats(coinflip2x); // { total: 2, wins: 1, chance: 0.5, rtp: 1 }
+stats(die); // { total: 6, wins: 1, chance: 0.1666..., rtp: 0.3333... }
+```
+
+The walk is exhaustive, so it costs `(max - min + 1) ^ count` steps. That is
+instant for coins and dice and hopeless for a 16 draw rule over a wide
+range, where you should reason about the odds directly instead.
+
+Solve for a target return like this:
+
+```ts
+const payoutFor = (wins, total, rtpBp = 9900) => Math.floor((rtpBp * total) / wins);
+payoutFor(1, 6); // 59400, the correctly priced six sided die
+```
+
+## Test it before anyone can bet on it
+
+`resolveOutcome` runs your rule against a seed with no server and no TEE, so
+you can see real outcomes immediately:
+
+```ts
+import { resolveOutcome } from "foreseer-sdk/rules";
+import { toBytes } from "foreseer-sdk";
+
+const seed = toBytes("0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
+
+resolveOutcome(coinflip2x, seed, "alice", 0n); // { draws: [1], win: true, payoutBp: 20000 }
+resolveOutcome(coinflip2x, seed, "alice", 1n); // { draws: [0], win: false, payoutBp: 0 }
+```
+
+For a full dress rehearsal, run it through `ReferenceTee`, which plays the
+real protocol in memory: see the [SDK examples](/sdk/typescript/examples).
+
+## Validate before you register
+
+`validateRule` throws with a specific reason, and the server runs the same
+check, so catching it locally saves a round trip. These are the mistakes
+people actually make:
+
+| Mistake | Error you get |
+| --- | --- |
+| `and` or `or` with one argument | `invalid rule: logic op needs >= 2 args` |
+| a fractional payout like `1.5` | `invalid rule: payout_bp must be uint32` |
+| `{ r: 1 }` when `count` is 1 | `invalid rule: draw index out of range` |
+| an extra field such as a name | `invalid rule: rule needs exactly v, random, win, payout_bp` |
+| `min` above `max` | `invalid rule: min must be <= max` |
+| asking for 17 draws | `invalid rule: count must be in 1..16` |
+
+<Callout type="info">
+    There is nowhere to put a title, a description or an image. A rule is consensus data, not presentation. Keep your
+    game's name, artwork and copy in your own database, keyed by the rule hash.
+</Callout>
+
+## Ship it
+
+From here your custom game is indistinguishable from a preset:
+
+<Steps>
+
+### Register it
+
+```ts
+import { isValidRule } from "foreseer-sdk/rules";
+
+if (!isValidRule(coinflip2x)) throw new Error("fix the rule before shipping");
+
+const { ruleHash } = await fetch(`${FORESEER}/rules`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": OPERATOR_KEY },
+    body: JSON.stringify({ rule: coinflip2x }),
+}).then((r) => r.json());
+```
+
+### Play it
+
+```ts
+const played = await fetch(`${FORESEER}/play`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": OPERATOR_KEY },
+    body: JSON.stringify({ clientSeed, ruleHash }),
+}).then((r) => r.json());
+```
+
+### Settle it
+
+```ts
+const returned = played.receipt.win ? (stake * played.receipt.payoutBp) / 10000 : 0;
+```
+
+</Steps>
+
+Players verify it with the same six checks as any other game, and because
+your rule is published at `/rules/{ruleHash}` and hashed into every receipt,
+you cannot quietly retune it later. Change the payout, change the range,
+change one comparison, and it becomes a different rule with a different hash
+that every old receipt refuses to match.
+
+That is the deal: you get complete freedom over the game, and none over the
+history.

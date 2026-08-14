@@ -17,20 +17,25 @@ running inside the casino, you would have to trust the code. Because a game
 is data, the rule is hashed into your receipt and everyone recomputes the
 same outcome from it.
 
-## The games we ship
+## The games
+
+Start with [Your own game](/gamemodes/your-own-game) if you want to see how
+a gamemode is actually put together. The rest are ready made presets.
 
 | Gamemode | Draws | Player picks | Best payout |
 | --- | --- | --- | --- |
+| [Your own game](/gamemodes/your-own-game) | up to 16, any range | whatever you define | whatever you price |
 | [European roulette](/gamemodes/european-roulette) | 1 of 37 pockets | a pocket, color, or group | 36.63x straight |
 | [American roulette](/gamemodes/american-roulette) | 1 of 38 pockets | same, plus `00` | 37.62x straight |
 | [Dice](/gamemodes/dice) | 1 of 10000 | a target and a direction | up to 990x |
 | [Coinflip](/gamemodes/coinflip) | 1 of 2 | heads or tails | 1.98x |
 | [Towers](/gamemodes/towers) | 1 per level | a tile on every level | 25.37x at eight levels |
 
-Anything these do not cover, you can express yourself: the rule AST is
-public and documented in [Game rules](/rules). Presets exist because most
-casino games are the same five shapes, not because the engine is limited to
-them.
+Presets exist because most casino games are the same five shapes, not
+because the engine is limited to them. Anything they do not cover you write
+yourself, with the same guarantees: see
+[Your own game](/gamemodes/your-own-game) for a worked example and
+[Game rules](/rules) for the full grammar.
 
 ## Every gamemode pays the same house edge
 
