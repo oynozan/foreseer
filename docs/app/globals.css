@@ -68,3 +68,8 @@ svg.flowchart .edgeLabel p {
 svg.flowchart .flowchart-link {
     stroke: var(--foreseer-ink) !important;
 }
+
+/* Footer stays on the plain white background */
+footer {
+    background: #ffffff !important;
+}

@@ -37,6 +37,7 @@ export default async function RootLayout({ children }) {
                 <Layout
                     navbar={<Navbar logo={<img src="/text-logo.svg" alt="Foreseer" style={{ height: 30 }} />} />}
                     pageMap={await getPageMap()}
+                    docsRepositoryBase="https://github.com/oynozan/foreseer/tree/main/docs"
                     darkMode={false}
                     nextThemes={{ defaultTheme: "light", forcedTheme: "light" }}
                     footer={
