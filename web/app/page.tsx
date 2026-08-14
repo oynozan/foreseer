@@ -1,8 +1,10 @@
 import Band from "@/components/Band";
 import CodeShowcase from "@/components/CodeShowcase";
 import { CoinflipDemo, DiceDemo, RouletteDemo } from "@/components/Demos";
+import Faq from "@/components/Faq";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
+import HowItWorks from "@/components/HowItWorks";
 import Nav from "@/components/Nav";
 
 export default function Home() {
@@ -23,8 +25,12 @@ export default function Home() {
                 <Band id="code" meta={["[ 05 / 07 ]", "INTEGRATE // THREE WAYS IN //"]}>
                     <CodeShowcase />
                 </Band>
-                <Band id="how-it-works" meta={["[ 06 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]} />
-                <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]} />
+                <Band id="how-it-works" meta={["[ 06 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]}>
+                    <HowItWorks />
+                </Band>
+                <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]}>
+                    <Faq />
+                </Band>
             </main>
             <Footer />
         </div>

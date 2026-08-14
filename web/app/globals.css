@@ -222,6 +222,65 @@ body::before {
     }
 }
 
+.reveal > * {
+    transition:
+        opacity 0.5s ease,
+        transform 0.5s ease;
+    transition-delay: calc(var(--i, 0) * 90ms);
+}
+
+.reveal.armed > * {
+    opacity: 0;
+    transform: translateY(10px);
+}
+
+.acc {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 0.25s ease;
+}
+
+.acc > div {
+    overflow: hidden;
+}
+
+.acc.open {
+    grid-template-rows: 1fr;
+}
+
+.plus {
+    position: relative;
+    width: 12px;
+    height: 12px;
+    flex: none;
+    transition: rotate 0.2s ease;
+}
+
+.plus::before,
+.plus::after {
+    content: "";
+    position: absolute;
+    background: var(--color-muted);
+}
+
+.plus::before {
+    left: 0;
+    right: 0;
+    top: 5px;
+    height: 1px;
+}
+
+.plus::after {
+    top: 0;
+    bottom: 0;
+    left: 5px;
+    width: 1px;
+}
+
+.plus.open {
+    rotate: 45deg;
+}
+
 .fade-in {
     animation: fadein 0.2s ease-out;
 }
