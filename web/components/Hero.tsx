@@ -1,10 +1,6 @@
 import Band from "@/components/Band";
-import example from "@/data/example.json";
+import ReceiptWidget from "@/components/ReceiptWidget";
 import { DOCS_URL, VERIFY_URL } from "@/lib/links";
-
-export function trunc(hex: string): string {
-    return hex.slice(0, 10) + "…" + hex.slice(-8);
-}
 
 const CHIPS: [string, string, string, string][] = [
     ["[ SHA256(serverSeed) ]", "7%", "27%", "-3deg"],
@@ -13,10 +9,7 @@ const CHIPS: [string, string, string, string][] = [
     ["[ SPEC v0.1 ]", "83%", "62%", "-2deg"],
 ];
 
-const CHECKS = ["signature", "commit", "outcome", "merkle"] as const;
-
 export default function Hero() {
-    const r = example.receipt;
     return (
         <Band id="hero" meta={["[ 01 / 07 ]", "PROTOCOL // COMMIT BEFORE BET //"]}>
             <div className="relative pt-16 text-center md:pt-24">
@@ -39,7 +32,7 @@ export default function Hero() {
                     Foreseer resolves game outcomes inside an attested TEE on Flare Confidential Compute. Every bet
                     returns a signed receipt that anyone can recompute, offline, in a browser.
                 </p>
-                <div className="mt-8 flex flex-wrap items-center justify-center gap-3" aria-hidden="false">
+                <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                     <a
                         href={VERIFY_URL}
                         className="tech rounded-full bg-primary px-6 py-3 text-[12px] font-medium text-white transition-colors hover:bg-primary-hover"
@@ -60,57 +53,7 @@ export default function Hero() {
                         </span>
                     ))}
                 </div>
-
-                <div className="card mx-auto mt-14 max-w-2xl text-left">
-                    <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-                        <span className="flex gap-1.5" aria-hidden="true">
-                            <i className="h-2 w-2 rounded-full border border-line" />
-                            <i className="h-2 w-2 rounded-full border border-line" />
-                            <i className="h-2 w-2 rounded-full border border-line" />
-                        </span>
-                        <span className="tech keepcase text-[11px] text-muted">
-                            receipt · epoch {r.epochId} · bet {r.betId}
-                        </span>
-                        <span className="chip tech">[ .JSON ]</span>
-                    </div>
-                    <div id="receipt-status" className="tech keepcase border-b border-line px-5 py-2.5 text-[11px] text-muted">
-                        [ ANCHORED ] · merkleRoot {trunc(example.merkleRoot)}
-                    </div>
-                    <pre id="receipt-json" className="keepcase overflow-x-auto px-5 py-4 text-[12.5px] leading-[1.7] text-ink" style={{ fontFamily: "var(--font-tech)" }}>
-{`{
-    "specVersion": ${r.specVersion},
-    "codeVersion": "${trunc(r.codeVersion)}",
-    "epochId": ${r.epochId},
-    "betId": ${r.betId},
-    "seedCommit": "${trunc(r.seedCommit)}",
-    "clientSeed": "${r.clientSeed}",
-    "nonce": ${r.nonce},
-    "ruleHash": "${trunc(r.ruleHash)}",
-    "draws": [`}<span className="text-primary">{r.draws[0]}</span>{`],
-    "win": ${r.win},
-    "payoutBp": ${r.payoutBp},
-    "timestamp": ${r.timestamp},
-    "signature": "${trunc(example.signature)}"
-}`}
-                    </pre>
-                    <div className="border-t border-line px-5 py-4">
-                        <ul id="receipt-checks" className="grid gap-2 sm:grid-cols-2">
-                            {CHECKS.map((name) => (
-                                <li key={name} className="flex items-center justify-between rounded-md border border-line px-3 py-2">
-                                    <span className="tech keepcase text-[11px] text-muted">{name}</span>
-                                    <span className="tech keepcase text-[11px] text-[#15803d]">true</span>
-                                </li>
-                            ))}
-                        </ul>
-                        <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                            <span className="chip tech">[ 4 / 4 OFFLINE CHECKS PASS ]</span>
-                            <span className="text-[12px] text-muted">
-                                Checks 2 and 4 are onchain reads against the attested TEE registry and the anchored
-                                commit.
-                            </span>
-                        </div>
-                    </div>
-                </div>
+                <ReceiptWidget />
             </div>
         </Band>
     );
