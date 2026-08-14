@@ -3,6 +3,21 @@ import example from "../data/example.json";
 
 const $ = (id) => document.getElementById(id);
 
+// Everything below is attacker reachable: url params, remote server strings
+const esc = (v) =>
+    String(v).replace(
+        /[&<>"']/g,
+        (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+    );
+
+const fail = (message) => {
+    $("results").textContent = "";
+    const p = document.createElement("p");
+    p.className = "verdict red";
+    p.textContent = message;
+    $("results").append(p);
+};
+
 const CHAIN_ROWS = [
     ["signature", "1. Receipt signature recovers the TEE address"],
     ["teeRegistered", "2. TEE address registered by Flare attestation"],
@@ -21,12 +36,12 @@ function render(result) {
         }
         const c = result.checks[key];
         const cls = c.ok ? "green" : "red";
-        return `<div class="check ${cls}"><span class="dot">&#9679;</span> ${label} <small>${c.detail}</small></div>`;
+        return `<div class="check ${cls}"><span class="dot">&#9679;</span> ${label} <small>${esc(c.detail)}</small></div>`;
     });
     $("results").innerHTML =
         rows.join("") +
         (result.allGreen
-            ? `<p class="verdict green">All offline checks green. teeId ${result.teeId}</p>`
+            ? `<p class="verdict green">All offline checks green. teeId ${esc(result.teeId)}</p>`
             : `<p class="verdict red">Verification FAILED, do not trust this receipt.</p>`);
 }
 
@@ -52,7 +67,7 @@ $("verify").addEventListener("click", () => {
     try {
         render(runChecks(inputs()));
     } catch (e) {
-        $("results").innerHTML = `<p class="verdict red">${e.message}</p>`;
+        fail(e.message);
     }
 });
 
@@ -65,7 +80,7 @@ $("example").addEventListener("click", () => {
     $("proof").value = JSON.stringify(example.proof);
     $("teeId").value = example.teeId;
     $("chainId").value = "114";
-    $("results").innerHTML = "<p>Golden vector loaded, press Verify.</p>";
+    $("results").textContent = "Golden vector loaded, press Verify.";
 });
 
 async function loadIntoForm() {
@@ -82,9 +97,9 @@ async function loadIntoForm() {
 $("load").addEventListener("click", async () => {
     try {
         await loadIntoForm();
-        $("results").innerHTML = "<p>Loaded from server, press Verify.</p>";
+        $("results").textContent = "Loaded from server, press Verify.";
     } catch (e) {
-        $("results").innerHTML = `<p class="verdict red">${e.message}</p>`;
+        fail(e.message);
     }
 });
 
@@ -98,11 +113,11 @@ $("load").addEventListener("click", async () => {
     $("server").value = server;
     $("epochId").value = epoch;
     $("betId").value = bet;
-    $("results").innerHTML = `<p>Loading bet ${bet} of epoch ${epoch}...</p>`;
+    $("results").textContent = `Loading bet ${bet} of epoch ${epoch}...`;
     try {
         await loadIntoForm();
         render(runChecks(inputs()));
     } catch (e) {
-        $("results").innerHTML = `<p class="verdict red">${e.message}</p>`;
+        fail(e.message);
     }
 })();
