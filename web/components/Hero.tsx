@@ -5,7 +5,7 @@ import { DOCS_URL, VERIFY_URL } from "@/lib/links";
 
 export default function Hero() {
     return (
-        <Band id="hero" meta={["[ 01 / 06 ]", "PROTOCOL // COMMIT BEFORE BET //"]}>
+        <Band id="hero" meta={["[ 01 / 06 ]", "PROTOCOL // COMMIT BEFORE BET //"]} className="-mt-px">
             <div className="relative pt-16 text-center md:pt-24">
                 <HeroBackdrop />
                 <div className="relative">

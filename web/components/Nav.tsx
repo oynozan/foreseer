@@ -23,9 +23,7 @@ export default function Nav() {
     return (
         <header className="sticky top-0 z-50">
             <div
-                className={`col flex h-16 items-center justify-between gap-6 border-b transition-colors ${
-                    scrolled ? "border-line bg-white/85 backdrop-blur" : "border-transparent"
-                }`}
+                className={`col flex h-16 items-center justify-between gap-6 border border-line transition-colors bg-white`}
             >
                 <a href="#hero" className="flex items-center">
                     <img src="/text-logo.svg" alt="Foreseer" className="h-8 w-auto" />
@@ -38,6 +36,9 @@ export default function Nav() {
                     ))}
                     <a href={DOCS_URL} className="transition-colors hover:text-ink">
                         Docs
+                    </a>
+                    <a href="/dashboard" className="transition-colors hover:text-ink">
+                        Dashboard
                     </a>
                 </nav>
                 <a

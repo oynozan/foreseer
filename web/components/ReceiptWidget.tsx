@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState } from "react";
 import example from "@/data/example.json";
-import BorderGlow from "@/components/reactbits/BorderGlow";
 
 const trunc = (hex: string) => hex.slice(0, 10) + "…" + hex.slice(-8);
 
@@ -84,21 +83,7 @@ export default function ReceiptWidget() {
     }, []);
 
     return (
-        <BorderGlow className="mx-auto mt-14 max-w-2xl border-line text-left">
-            <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
-                <span className="flex gap-1.5" aria-hidden="true">
-                    <i className="h-2 w-2 rounded-full border border-line" />
-                    <i className="h-2 w-2 rounded-full border border-line" />
-                    <i className="h-2 w-2 rounded-full border border-line" />
-                </span>
-                <span className="tech keepcase text-[11px] text-muted">
-                    receipt · epoch {r.epochId} · bet {r.betId}
-                </span>
-                <span className="chip tech">.JSON</span>
-            </div>
-            <div className="tech keepcase border-b border-line px-5 py-2.5 text-[11px] text-muted">
-                {STATUS[statusIdx]}
-            </div>
+        <div className="mx-auto mt-14 max-w-2xl border border-line text-left">
             <pre
                 className="keepcase overflow-x-auto px-5 py-4 text-[12.5px] leading-[1.7] text-ink"
                 style={{ fontFamily: "var(--font-tech)" }}
@@ -113,31 +98,6 @@ export default function ReceiptWidget() {
                     display
                 )}
             </pre>
-            <div className="border-t border-line px-5 py-4">
-                <ul className="grid gap-2 sm:grid-cols-2">
-                    {CHECKS.map((name, i) => (
-                        <li
-                            key={name}
-                            className={`flex items-center justify-between rounded-md border border-line px-3 py-2 transition-opacity duration-300 ${
-                                i < checksShown ? "opacity-100" : "opacity-30"
-                            }`}
-                        >
-                            <span className="tech keepcase text-[11px] text-muted">{name}</span>
-                            <span className="tech keepcase text-[11px] text-[#15803d]">
-                                {i < checksShown ? "true" : "…"}
-                            </span>
-                        </li>
-                    ))}
-                </ul>
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
-                    <span className={`chip tech transition-opacity duration-300 ${checksShown === 4 ? "opacity-100" : "opacity-0"}`}>
-                        4 / 4 offline checks pass
-                    </span>
-                    <span className="text-[12px] text-muted">
-                        Checks 2 and 4 are onchain reads against the attested TEE registry and the anchored commit.
-                    </span>
-                </div>
-            </div>
-        </BorderGlow>
+        </div>
     );
 }
