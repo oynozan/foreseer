@@ -89,18 +89,28 @@ prints receipts, the revealed seed, the Merkle root, and the close signature.
 
 ## Coston2 deployment (live)
 
-Deployed 2026-08-14 from `0x84ef59f489879c00dd2d60c5b7f5a94ee20a85a5`:
+Deployed from `0x84ef59f489879c00dd2d60c5b7f5a94ee20a85a5`:
 
 | Contract | Address |
 | --- | --- |
-| ForeseerInstructionSender | `0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6` |
+| ForeseerInstructionSender | `0x3f93049764efE9b33497Ffc3d0D92b5d262d1fE9` |
 | OperatorBond | `0xAe260f04eCe439aD21427381e0032ad9B2f11e69` |
 
-The golden epoch is anchored on the public network: `commitEpoch` tx
-`0xee82feb5...28b2d5`, `anchorEpoch` tx `0x293c0e32...d2529f` (the contract
-verified the golden TEE close signature via ecrecover on chain id 114), and
-`verifyReceiptInclusion` answers true for golden receipt 0 over public RPC.
-An operator bond of 1 C2FLR is active.
+The sender was redeployed 2026-08-14 with a `teeId` nobody else holds:
+`0xC5D8aF573bCBF19b46b51D5ccF65864DCD46f489`. Constructor state verified over
+public RPC: owner, poster and treasury are the deployer, `epochFee` 0.1 C2FLR,
+`treasuryShareBp` 2000, both registries the `FlareTeeManager` diamond.
+
+The operator bond of 1 C2FLR is unaffected: `OperatorBond` keys bonds by
+operator address and holds no reference to the sender.
+
+NOT YET ANCHORED. The previous sender `0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6`
+carried `teeId` `0x7e5f4552...395bdf`, the SPEC 9.1 reference key, so anyone
+could forge an epoch close against it. Its anchored golden epoch
+(`commitEpoch` `0xee82feb5...28b2d5`, `anchorEpoch` `0x293c0e32...d2529f`)
+belongs to that dead contract and cannot be replayed here: the golden close
+signature recovers to the reference key, not to the new `teeId`. Restoring the
+live demo means running a fresh epoch through the extension and anchoring that.
 
 ## Flare registry registration (live)
 
