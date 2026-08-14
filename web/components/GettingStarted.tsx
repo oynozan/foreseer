@@ -46,20 +46,25 @@ export default function GettingStarted() {
                 </p>
             </div>
 
-            <ol className="mt-12 border-t border-line md:grid md:grid-cols-6">
+            <ol className="rail mt-12 border-t border-line md:grid md:grid-cols-6">
                 {STEPS.map((s) => (
-                    <li key={s.n} className="relative border-b border-line py-6 pl-4 md:border-b-0 md:pr-4 md:pl-3">
-                        <span className="absolute top-0 left-0 h-px w-6 bg-primary" aria-hidden="true" />
+                    <li
+                        key={s.n}
+                        className="rail-step relative border-b border-line py-6 pl-4 md:border-b-0 md:pr-4 md:pl-3"
+                    >
+                        <span className="rail-tick absolute top-0 left-0 h-px w-6 bg-primary" aria-hidden="true" />
                         <span className="absolute top-0 left-0 h-4 w-px bg-primary md:hidden" aria-hidden="true" />
-                        <div className="tech flex items-baseline gap-2 text-[10px]">
-                            <span className="text-primary">{s.n}</span>
-                            <span className="text-muted">{s.phase}</span>
+                        <div className="rail-body">
+                            <div className="tech flex items-baseline gap-2 text-[10px]">
+                                <span className="text-primary">{s.n}</span>
+                                <span className="text-muted">{s.phase}</span>
+                            </div>
+                            <h3 className="mt-3 text-[15px] font-medium leading-tight">{s.title}</h3>
+                            <p className="keepcase mt-1.5 text-[13px] leading-snug text-muted">{s.note}</p>
+                            {s.code && (
+                                <code className="chip keepcase mt-3 inline-flex text-[11px] text-ink">{s.code}</code>
+                            )}
                         </div>
-                        <h3 className="mt-3 text-[15px] font-medium leading-tight">{s.title}</h3>
-                        <p className="keepcase mt-1.5 text-[13px] leading-snug text-muted">{s.note}</p>
-                        {s.code && (
-                            <code className="chip keepcase mt-3 inline-flex text-[11px] text-ink">{s.code}</code>
-                        )}
                     </li>
                 ))}
             </ol>
@@ -93,10 +98,6 @@ export default function GettingStarted() {
                         </div>
                     ))}
                 </div>
-                <p className="border-t border-line bg-mint/40 px-6 py-4 text-[14px] text-ink">
-                    <strong className="font-medium">A stolen key spends prepaid balance.</strong>{" "}
-                    <span className="text-muted">Nothing else, ever.</span>
-                </p>
             </div>
 
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">

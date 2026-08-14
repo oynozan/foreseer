@@ -436,3 +436,73 @@ body {
         scroll-behavior: auto;
     }
 }
+
+/* onboarding rail: ticks draw left to right on scroll, static without support */
+@media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+        .rail {
+            view-timeline: --rail block;
+        }
+
+        .rail-tick {
+            transform-origin: left center;
+            animation: tick-draw linear both;
+            animation-timeline: --rail;
+        }
+
+        .rail-body {
+            animation: step-rise linear both;
+            animation-timeline: --rail;
+        }
+
+        .rail-step:nth-child(1) .rail-tick,
+        .rail-step:nth-child(1) .rail-body {
+            animation-range: entry 0% entry 45%;
+        }
+
+        .rail-step:nth-child(2) .rail-tick,
+        .rail-step:nth-child(2) .rail-body {
+            animation-range: entry 10% entry 55%;
+        }
+
+        .rail-step:nth-child(3) .rail-tick,
+        .rail-step:nth-child(3) .rail-body {
+            animation-range: entry 20% entry 65%;
+        }
+
+        .rail-step:nth-child(4) .rail-tick,
+        .rail-step:nth-child(4) .rail-body {
+            animation-range: entry 30% entry 75%;
+        }
+
+        .rail-step:nth-child(5) .rail-tick,
+        .rail-step:nth-child(5) .rail-body {
+            animation-range: entry 40% entry 85%;
+        }
+
+        .rail-step:nth-child(6) .rail-tick,
+        .rail-step:nth-child(6) .rail-body {
+            animation-range: entry 50% entry 95%;
+        }
+    }
+}
+
+@keyframes tick-draw {
+    from {
+        transform: scaleX(0);
+    }
+    to {
+        transform: scaleX(1);
+    }
+}
+
+@keyframes step-rise {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
