@@ -32,11 +32,15 @@ for (const file of authored) {
 }
 ok("no em dashes in " + authored.length + " files");
 
-// golden receipt must match docs-site source
+// golden receipt must match the spec vectors
 const mine = JSON.parse(readFileSync(join(root, "data", "example.json"), "utf8"));
-const theirs = JSON.parse(readFileSync(join(root, "..", "docs-site", "src", "example.json"), "utf8"));
-if (JSON.stringify(mine) !== JSON.stringify(theirs)) fail("data/example.json drifted from docs-site/src/example.json");
-else ok("golden receipt matches docs-site");
+const e2e = JSON.parse(readFileSync(join(root, "..", "spec", "vectors", "e2e.json"), "utf8"));
+const drifted =
+    JSON.stringify(mine.receipt) !== JSON.stringify(e2e.receipts[0].receipt) ||
+    mine.merkleRoot !== e2e.merkleRoot ||
+    mine.serverSeed !== e2e.serverSeed;
+if (drifted) fail("data/example.json drifted from spec/vectors/e2e.json");
+else ok("golden receipt matches spec vectors");
 
 // 1px border discipline
 const css = readFileSync(join(root, "app", "globals.css"), "utf8");
@@ -44,7 +48,17 @@ if (/\b2px solid\b/.test(css)) fail("2px border in globals.css");
 else ok("no 2px borders");
 
 // prerendered page checks
-const REQUIRED_IDS = ["hero", "demo-dice", "demo-coinflip", "demo-roulette", "code", "how-it-works", "faq"];
+const REQUIRED_IDS = [
+    "hero",
+    "demo-dice",
+    "demo-coinflip",
+    "demo-roulette",
+    "code",
+    "how-it-works",
+    "flare",
+    "economy",
+    "faq",
+];
 const htmlPath = join(root, ".next", "server", "app", "index.html");
 if (existsSync(htmlPath)) {
     const page = readFileSync(htmlPath, "utf8");
@@ -70,6 +84,7 @@ if (existsSync(htmlPath)) {
             const clean = url.split("?")[0];
             if (clean === "/" || clean === "/icon.png") continue;
             if (existsSync(join(root, "public", clean))) continue;
+            if (existsSync(join(root, ".next", "server", "app", clean + ".html"))) continue;
             if (declared.includes(clean)) continue;
             fail("unresolved local url " + url);
             broken++;
@@ -79,6 +94,12 @@ if (existsSync(htmlPath)) {
 } else {
     fail("no prerendered index.html, run pnpm build first");
 }
+
+// verify page and widget bundle exist
+if (existsSync(join(root, ".next", "server", "app", "verify.html"))) ok("verify page prerendered");
+else fail("verify page missing from build");
+if (existsSync(join(root, "public", "foreseer-widget.js"))) ok("widget bundle present");
+else fail("public/foreseer-widget.js missing, run web/scripts/build-widget.mjs");
 
 if (failures) {
     console.error(failures + " check(s) failed");

@@ -1,11 +1,12 @@
 import Band from "@/components/Band";
+import EpochStrip from "@/components/EpochStrip";
 import HeroBackdrop from "@/components/HeroBackdrop";
 import ReceiptWidget from "@/components/ReceiptWidget";
 import { DOCS_URL, VERIFY_URL } from "@/lib/links";
 
 export default function Hero() {
     return (
-        <Band id="hero" meta={["[ 01 / 06 ]", "PROTOCOL // COMMIT BEFORE BET //"]} className="-mt-px">
+        <Band id="hero" meta={["[ 01 / 08 ]", "PROTOCOL // COMMIT BEFORE BET //"]} className="-mt-px">
             <div className="relative pt-16 text-center md:pt-24">
                 <HeroBackdrop />
                 <div className="relative">
@@ -31,6 +32,7 @@ export default function Hero() {
                             Read the docs
                         </a>
                     </div>
+                    <EpochStrip />
                     <ReceiptWidget />
                 </div>
             </div>

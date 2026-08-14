@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import { DOCS_URL, VERIFY_URL } from "@/lib/links";
 
 const LINKS = [
@@ -11,15 +8,6 @@ const LINKS = [
 ] as const;
 
 export default function Nav() {
-    const [scrolled, setScrolled] = useState(false);
-
-    useEffect(() => {
-        const onScroll = () => setScrolled(window.scrollY > 8);
-        onScroll();
-        window.addEventListener("scroll", onScroll, { passive: true });
-        return () => window.removeEventListener("scroll", onScroll);
-    }, []);
-
     return (
         <header className="sticky top-0 z-50">
             <div
@@ -37,16 +25,21 @@ export default function Nav() {
                     <a href={DOCS_URL} className="transition-colors hover:text-ink">
                         Docs
                     </a>
-                    <a href="/dashboard" className="transition-colors hover:text-ink">
+                </nav>
+                <span className="flex items-center gap-2">
+                    <a
+                        href={VERIFY_URL}
+                        className="rounded-full border border-line bg-white px-5 py-2.5 text-[13px] font-medium text-ink transition-colors hover:border-ink"
+                    >
+                        Verify
+                    </a>
+                    <a
+                        href="/dashboard"
+                        className="rounded-full bg-primary px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
+                    >
                         Dashboard
                     </a>
-                </nav>
-                <a
-                    href={VERIFY_URL}
-                    className="rounded-full bg-primary px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
-                >
-                    Verify a bet
-                </a>
+                </span>
             </div>
         </header>
     );

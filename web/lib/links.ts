@@ -2,7 +2,7 @@
 export const DOCS_BASE = "";
 
 export const DOCS_URL = DOCS_BASE + "/";
-export const VERIFY_URL = DOCS_BASE + "/verify";
+export const VERIFY_URL = "/verify";
 
 export const DOCS = {
     howItWorks: DOCS_BASE + "/how-it-works",

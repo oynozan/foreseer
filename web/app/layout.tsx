@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Akt, Ubuntu } from "next/font/google";
+import { Akt, Ubuntu, Ubuntu_Mono } from "next/font/google";
 import "./globals.css";
 
 const akt = Akt({
@@ -13,6 +13,12 @@ const ubuntu = Ubuntu({
     variable: "--font-ubuntu",
 });
 
+const ubuntuMono = Ubuntu_Mono({
+    weight: ["400", "700"],
+    subsets: ["latin"],
+    variable: "--font-ubuntu-mono",
+});
+
 export const metadata: Metadata = {
     title: "Foreseer · Provably fair outcomes for iGaming, verifiable in your browser",
     description:
@@ -21,7 +27,11 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
     return (
-        <html lang="en" data-scroll-behavior="smooth" className={`${akt.variable} ${ubuntu.variable} antialiased`}>
+        <html
+            lang="en"
+            data-scroll-behavior="smooth"
+            className={`${akt.variable} ${ubuntu.variable} ${ubuntuMono.variable} antialiased`}
+        >
             <body>{children}</body>
         </html>
     );

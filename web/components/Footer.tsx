@@ -15,7 +15,8 @@ const COLUMNS: [string, [string, string][]][] = [
         [
             ["Server API", DOCS.api],
             ["TypeScript SDK", DOCS.sdk],
-            ["Verifier widget", VERIFY_URL],
+            ["Verifier", VERIFY_URL],
+            ["Dashboard", "/dashboard"],
             ["Docs", DOCS_URL],
         ],
     ],
@@ -26,10 +27,10 @@ export default function Footer() {
         <footer className="band">
             <div className="col grid gap-12 py-16 md:grid-cols-[1.8fr_1fr_1fr]">
                 <div>
-                    <img src="/logo.svg" alt="Foreseer" className="h-9 w-9" />
-                    <p className="mt-5 max-w-64 text-sm leading-relaxed text-muted">
-                        <strong className="font-medium text-ink">Tamper evident, by construction.</strong> Three
-                        implementations, one spec, golden vectors in between.
+                    <img src="/text-logo.svg" alt="Foreseer" className="h-7 w-auto" />
+                    <p className="mt-5 max-w-72 text-sm leading-relaxed text-muted">
+                        Provably fair outcomes for iGaming, on Flare Confidential Compute. Verify any bet in your
+                        browser.
                     </p>
                 </div>
                 {COLUMNS.map(([title, links]) => (
