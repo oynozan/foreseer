@@ -1,0 +1,97 @@
+import { Callout } from "nextra/components";
+
+# American roulette
+
+The same table as [European roulette](/gamemodes/european-roulette) with one
+extra green pocket, `00`, for 38 pockets in total.
+
+## How it works
+
+The engine draws **one integer in 0..37**. Pockets 0 to 36 are themselves,
+and **37 is the encoding of `00`**, because the outcome space has to be
+integers. Use the helpers rather than remembering that:
+
+```ts
+import { americanRoulette, DOUBLE_ZERO, pocketLabel } from "foreseer-sdk";
+
+pocketLabel(37); // "00"
+DOUBLE_ZERO === 37; // true
+
+const rule = americanRoulette({ type: "straight", number: "00" });
+```
+
+A straight bet on the double zero is written `number: "00"`, the string, and
+every other number is written as an integer. Asking for `"00"` on the
+European wheel throws, because that pocket does not exist there.
+
+### The bets
+
+Identical bet types to the European wheel, different odds and payouts:
+
+| Bet | Wins on | Chance | Payout |
+| --- | --- | --- | --- |
+| `{ type: "straight", number: n \| "00" }` | exactly that pocket | 2.63% | 37.62x |
+| `{ type: "red" }` / `{ type: "black" }` | the 18 red or 18 black pockets | 47.37% | 2.09x |
+| `{ type: "even" }` / `{ type: "odd" }` | 1..36 with that parity | 47.37% | 2.09x |
+| `{ type: "low" }` / `{ type: "high" }` | 1..18 or 19..36 | 47.37% | 2.09x |
+| `{ type: "dozen", index: 1 \| 2 \| 3 }` | 1..12, 13..24, or 25..36 | 31.58% | 3.135x |
+| `{ type: "column", index: 1 \| 2 \| 3 }` | the 12 numbers in that column | 31.58% | 3.135x |
+
+Both `0` and `00` lose every outside bet. They win only as straight bets on
+themselves.
+
+### The extra zero costs the player nothing here
+
+This is the part worth reading twice.
+
+In a traditional casino the American wheel is famously the worse game: two
+zeros make winning rarer, but a straight bet still pays 35 to 1, so the
+house edge jumps from 2.70 to **5.26 percent**. The player absorbs the extra
+pocket.
+
+Foreseer derives the payout from the actual outcome count, so the extra
+pocket raises the payout instead:
+
+```
+european straight: floor(9900 * 37 / 1) = 366300 bp = 36.63x
+american straight: floor(9900 * 38 / 1) = 376200 bp = 37.62x
+```
+
+<Callout type="info">
+    Both wheels return exactly 99 percent. On Foreseer, American roulette is a different game shape, not a worse deal:
+    you win less often and are paid more when you do.
+</Callout>
+
+If you want the classic economics, that is a business decision you make
+openly by choosing a different payout, not something the engine does to
+players quietly. Presets always hold the 1 percent line.
+
+## Integration
+
+Same loop as any gamemode, with the double zero handled by the helpers:
+
+```ts
+import { AMERICAN_WHEEL, americanRoulette, pocketColor, pocketLabel } from "foreseer-sdk";
+
+const rule = americanRoulette({ type: "red" });
+const { ruleHash } = await api("POST", "/rules", { rule });
+
+const played = await api("POST", "/play", { clientSeed, ruleHash });
+const pocket = played.receipt.draws[0];
+
+console.log(pocketLabel(pocket), pocketColor(pocket));
+// "00" green, when the extra pocket lands
+
+const index = AMERICAN_WHEEL.indexOf(pocket); // rim position for the animation
+```
+
+`AMERICAN_WHEEL` is the real 38 pocket sequence
+`0, 28, 9, 26, 30, 11, 7, 20, ...` with `00` in its physical place opposite
+the single zero. As on the European wheel, this affects presentation only.
+
+## Mixing both wheels
+
+Nothing stops you offering both tables from one operator account. They are
+different rules with different hashes, so receipts are never ambiguous: the
+rule hash in the receipt tells any verifier which wheel was in play, and the
+`random.max` of that rule (36 or 37) proves the pocket count.

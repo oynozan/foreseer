@@ -1,0 +1,100 @@
+# Coinflip
+
+The smallest possible game, and the best one to integrate first: two
+outcomes, one call, nothing to configure.
+
+## How it works
+
+The engine draws **one integer in 0..1**. Heads is 1, tails is 0.
+
+```ts
+import { coinflip } from "foreseer-sdk";
+
+const heads = coinflip(); // same as coinflip({ side: "heads" })
+const tails = coinflip({ side: "tails" });
+```
+
+| Bet | Wins on | Chance | Payout |
+| --- | --- | --- | --- |
+| `coinflip()` or `coinflip({ side: "heads" })` | draw is 1 | 50% | 1.98x |
+| `coinflip({ side: "tails" })` | draw is 0 | 50% | 1.98x |
+
+`floor(9900 * 2 / 1) = 19800` basis points, so a winning 10 chip stake
+returns 19.8 chips. Both sides are the same bet from opposite directions,
+which makes coinflip a good sanity check when you are wiring up a new
+integration: over many plays each side should win about half the time, and
+your ledger should lose about 1 percent of turnover.
+
+## The two rules
+
+Heads:
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 1, "count": 1 },
+    "win": { "op": "==", "l": { "r": 0 }, "r": { "c": 1 } },
+    "payout_bp": 19800
+}
+```
+
+Tails is the same rule with `"c": 0`. They are different rules with
+different hashes, which is exactly what you want: the receipt records which
+side the player took, so there is no argument later about which way the coin
+was called.
+
+## Integration
+
+Two rules, registered once at startup:
+
+```ts
+import { coinflip } from "foreseer-sdk";
+
+const hashes = {};
+for (const side of ["heads", "tails"]) {
+    const { ruleHash } = await api("POST", "/rules", { rule: coinflip({ side }) });
+    hashes[side] = ruleHash;
+}
+
+async function flip(clientSeed, side, stake) {
+    const played = await api("POST", "/play", { clientSeed, ruleHash: hashes[side] });
+    const landed = played.receipt.draws[0] === 1 ? "heads" : "tails";
+
+    return {
+        landed,
+        won: played.receipt.win, // identical to landed === side
+        returned: played.receipt.win ? (stake * played.receipt.payoutBp) / 10000 : 0,
+    };
+}
+```
+
+Note that `played.receipt.win` already answers the question. Deriving the
+result yourself from `draws` is useful for display, but the win flag is the
+signed one, and it is what the verifier recomputes.
+
+## Best of three, and other sequences
+
+Do not build multi round games by adding rounds to a rule you invented.
+Either play several bets and count wins in your own logic, where each round
+gets its own signed receipt, or express the whole sequence as one rule with
+several draws:
+
+```ts
+// Three flips in one bet, player wins with two or more heads
+const bestOfThree = {
+    v: 0,
+    random: { type: "int", min: 0, max: 1, count: 3 },
+    win: {
+        op: "or",
+        args: [
+            { op: "and", args: [{ op: "==", l: { r: 0 }, r: { c: 1 } }, { op: "==", l: { r: 1 }, r: { c: 1 } }] },
+            { op: "and", args: [{ op: "==", l: { r: 0 }, r: { c: 1 } }, { op: "==", l: { r: 2 }, r: { c: 1 } }] },
+            { op: "and", args: [{ op: "==", l: { r: 1 }, r: { c: 1 } }, { op: "==", l: { r: 2 }, r: { c: 1 } }] },
+        ],
+    },
+    payout_bp: 19800, // 4 of 8 outcomes win, so 99 percent RTP
+};
+```
+
+That rule is not a preset, it is just data you wrote, and the engine treats
+it exactly like one. See [Game rules](/rules) for the full grammar.

@@ -1,0 +1,114 @@
+import { Callout } from "nextra/components";
+
+# Dice
+
+The classic crypto casino game: roll a number, bet whether it lands above or
+below your target. The player chooses the risk, and the payout follows.
+
+## How it works
+
+The engine draws **one integer in 0..9999**, which most interfaces show as
+a two decimal number by dividing by 100 (so 3725 is displayed as 37.25).
+
+```ts
+import { dice } from "foreseer-sdk";
+
+const rule = dice({ target: 4999, mode: "over" });
+// wins when the roll is strictly greater than 4999, so 5000..9999
+```
+
+- `mode: "over"` wins when `roll > target`, leaving `9999 - target` winners.
+- `mode: "under"` wins when `roll < target`, leaving `target` winners.
+
+The bounds are strict on both sides, which is what makes `over 4999` and
+`under 5000` the same 50 percent bet from opposite directions.
+
+### Payout follows the target
+
+There is no bet list here, just a dial. Some points on it:
+
+| Call | Winning rolls | Chance | Payout |
+| --- | --- | --- | --- |
+| over 4999 | 5000..9999 | 50.00% | 1.98x |
+| under 5000 | 0..4999 | 50.00% | 1.98x |
+| over 7499 | 7500..9999 | 25.00% | 3.96x |
+| over 8999 | 9000..9999 | 10.00% | 9.9x |
+| under 1000 | 0..999 | 10.00% | 9.9x |
+| over 9899 | 9900..9999 | 1.00% | 99x |
+
+Every row is `floor(9900 * 10000 / winning_rolls)`, so every row returns 99
+percent. A player chasing 99x is not getting a worse deal than one taking
+1.98x, they are just taking variance instead of frequency.
+
+<Callout type="warning">
+    `dice({ target: 9999, mode: "over" })` throws: no roll is greater than 9999, so the bet could never win. The same
+    applies to `under 0`. The preset refuses to build an unwinnable rule rather than let you sell one.
+</Callout>
+
+### The rule
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 9999, "count": 1 },
+    "win": { "op": ">", "l": { "r": 0 }, "r": { "c": 4999 } },
+    "payout_bp": 19800
+}
+```
+
+This is the example rule used throughout the docs and the golden vectors,
+with hash
+`0xdd9d92df5a6f56bc664137373c13f866d3f7fb51fb4650ad09b85e8024779125`.
+
+## Integration
+
+The one thing to get right is that each distinct target is a distinct rule
+and therefore a distinct hash. Register on demand and cache:
+
+```ts
+import { dice } from "foreseer-sdk";
+
+const hashes = new Map();
+
+async function rollDice(clientSeed, target, mode, stake) {
+    const key = `${mode}:${target}`;
+    if (!hashes.has(key)) {
+        const { ruleHash } = await api("POST", "/rules", { rule: dice({ target, mode }) });
+        hashes.set(key, ruleHash);
+    }
+
+    const played = await api("POST", "/play", { clientSeed, ruleHash: hashes.get(key) });
+    const roll = played.receipt.draws[0];
+
+    return {
+        display: (roll / 100).toFixed(2), // 3725 shows as 37.25
+        won: played.receipt.win,
+        returned: played.receipt.win ? (stake * played.receipt.payoutBp) / 10000 : 0,
+    };
+}
+```
+
+If your interface lets players pick any target, you will accumulate up to
+10000 rules per direction. That is fine: rules are tiny, content addressed,
+and registration is idempotent, so the cache above sends each one exactly
+once.
+
+### Showing the odds honestly
+
+Everything a player needs to check your quoted odds is in the rule itself,
+so derive your interface numbers from the preset instead of hardcoding them:
+
+```ts
+const rule = dice({ target, mode });
+const winners = mode === "over" ? 9999 - target : target;
+
+const chance = (100 * winners) / 10000; // percent
+const multiplier = rule.payout_bp / 10000; // 1.98 at 50 percent
+```
+
+## What the player verifies
+
+After the reveal, the player recomputes the roll from the server seed, their
+client seed, and the nonce, then checks the comparison themselves. Because
+the target lives inside the hashed rule, moving it after the bet is not
+possible without breaking the receipt.

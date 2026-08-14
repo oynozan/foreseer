@@ -1,0 +1,130 @@
+import { Callout } from "nextra/components";
+
+# European roulette
+
+One wheel, 37 pockets: the numbers 1 to 36 plus a single green zero. This
+is the default roulette on Foreseer, so `roulette(bet)` and
+`europeanRoulette(bet)` are the same function.
+
+## How it works
+
+The engine draws **one integer in 0..36**. That number is the pocket. There
+is no wheel simulation and no physics: the pocket order you see spinning on
+screen is decoration, and the outcome is the drawn integer.
+
+```ts
+import { roulette, pocketColor } from "foreseer-sdk";
+
+const rule = roulette({ type: "red" });
+// draws: [32] means pocket 32, pocketColor(32) === "red", so this bet wins
+```
+
+### The bets
+
+| Bet | Wins on | Chance | Payout |
+| --- | --- | --- | --- |
+| `{ type: "straight", number: n }` | exactly `n`, where n is 0..36 | 2.70% | 36.63x |
+| `{ type: "red" }` / `{ type: "black" }` | the 18 red or 18 black pockets | 48.65% | 2.035x |
+| `{ type: "even" }` / `{ type: "odd" }` | 1..36 with that parity | 48.65% | 2.035x |
+| `{ type: "low" }` / `{ type: "high" }` | 1..18 or 19..36 | 48.65% | 2.035x |
+| `{ type: "dozen", index: 1 \| 2 \| 3 }` | 1..12, 13..24, or 25..36 | 32.43% | 3.0525x |
+| `{ type: "column", index: 1 \| 2 \| 3 }` | the 12 numbers in that table column | 32.43% | 3.0525x |
+
+Zero loses every bet except a straight bet on zero itself. That single
+pocket is the entire mathematical reason the house wins over time in a
+classic casino, and here it is priced explicitly.
+
+### Why the payouts look unusual
+
+A traditional table pays a straight bet 35 to 1, meaning 36x your stake
+back on a 1 in 37 chance, which quietly keeps 2.70 percent. Foreseer prices
+from the true odds and then applies one visible 1 percent edge:
+
+```
+straight: floor(9900 * 37 / 1)  = 366300 bp = 36.63x
+red:      floor(9900 * 37 / 18) = 20350 bp  = 2.035x
+dozen:    floor(9900 * 37 / 12) = 30525 bp  = 3.0525x
+```
+
+Multiply chance by payout and you get 0.99 every time.
+
+### The rule behind a color bet
+
+Nothing is hidden. `roulette({ type: "red" })` expands to a plain
+disjunction over the 18 red pockets, which is what gets hashed into every
+receipt:
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 36, "count": 1 },
+    "win": { "op": "or", "args": [{ "op": "==", "l": { "r": 0 }, "r": { "c": 1 } }, "... 17 more ..."] },
+    "payout_bp": 20350
+}
+```
+
+Its hash is stable, so you can register it once and reuse it forever:
+`0xe0faca144d579b8398db7aaa6e613dbfd3f6403d4c06736394029fb4c41bea87`.
+
+## Integration
+
+Register one rule per bet type your table offers. A single spin serves one
+bet, so a player covering red and a straight number is two plays.
+
+```ts
+import { pocketColor, pocketLabel, roulette } from "foreseer-sdk";
+
+// Cache the hash per bet, the rules never change
+const hashes = new Map();
+
+async function play(clientSeed, bet, stake) {
+    const rule = roulette(bet);
+    if (!hashes.has(JSON.stringify(bet))) {
+        const reg = await api("POST", "/rules", { rule });
+        hashes.set(JSON.stringify(bet), reg.ruleHash);
+    }
+    const played = await api("POST", "/play", {
+        clientSeed,
+        ruleHash: hashes.get(JSON.stringify(bet)),
+    });
+
+    const pocket = played.receipt.draws[0];
+    return {
+        pocket,
+        label: pocketLabel(pocket),
+        color: pocketColor(pocket),
+        won: played.receipt.win,
+        returned: played.receipt.win ? (stake * played.receipt.payoutBp) / 10000 : 0,
+        receipt: played,
+    };
+}
+```
+
+<Callout type="warning">
+    Verify the receipt signature before crediting anything. `verifyReceiptSignature(played, domain, expectedTeeId)` is
+    one call and it is the difference between paying on a real TEE result and paying on whatever your network handed
+    you.
+</Callout>
+
+### Drawing the wheel
+
+For presentation only, the SDK exports the physical pocket order so your
+animation lands the ball in the right place:
+
+```ts
+import { EUROPEAN_WHEEL } from "foreseer-sdk";
+
+const index = EUROPEAN_WHEEL.indexOf(pocket); // 0..36 position on the rim
+const angle = (index / EUROPEAN_WHEEL.length) * 2 * Math.PI;
+```
+
+`EUROPEAN_WHEEL` is the real sequence `0, 32, 15, 19, 4, 21, ...`. It has no
+effect on outcomes; changing it changes only where the ball appears to stop.
+
+## What the player verifies
+
+The receipt carries the drawn pocket, the rule hash, and the client seed.
+After the epoch closes and the server seed is revealed, anyone recomputes
+the pocket from `(serverSeed, clientSeed, nonce)` and checks it against the
+receipt. If your table showed red and the receipt says 26, the mismatch is
+provable by anyone, forever.

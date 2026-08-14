@@ -1,0 +1,155 @@
+import { Callout } from "nextra/components";
+
+# Towers
+
+Climb a tower. Every level has a row of tiles, exactly one of them hides a
+bomb. Pick a safe tile and you move up; hit the bomb and the climb is over.
+The higher you go, the more it pays.
+
+## How it works
+
+Towers is the first preset that uses **more than one draw**. The engine
+draws one integer per level, and that integer is the bomb tile on that
+level:
+
+```ts
+import { towers } from "foreseer-sdk";
+
+const rule = towers({ picks: [0, 1, 2], tiles: 3 });
+// draws: [2, 0, 1] means bombs on tile 2, then 0, then 1
+// the player picked 0, 1, 2 and missed every bomb, so this climb wins
+```
+
+- `tiles` is how many tiles each level has, 2 to 16, default 3.
+- `picks` is the player's chosen tile for each level, one entry per level,
+  1 to 16 levels. Its length **is** the height of the tower.
+
+The player wins only by surviving every level, so the rule is a conjunction:
+each drawn bomb must differ from the pick on that level.
+
+```json
+{
+    "v": 0,
+    "random": { "type": "int", "min": 0, "max": 2, "count": 3 },
+    "win": {
+        "op": "and",
+        "args": [
+            { "op": "!=", "l": { "r": 0 }, "r": { "c": 0 } },
+            { "op": "!=", "l": { "r": 1 }, "r": { "c": 1 } },
+            { "op": "!=", "l": { "r": 2 }, "r": { "c": 2 } }
+        ]
+    },
+    "payout_bp": 33412
+}
+```
+
+### Payouts by height
+
+With three tiles per level, each level is survived two times in three:
+
+| Levels | Chance | Payout |
+| --- | --- | --- |
+| 1 | 66.67% | 1.485x |
+| 2 | 44.44% | 2.2275x |
+| 3 | 29.63% | 3.3412x |
+| 4 | 19.75% | 5.0118x |
+| 5 | 13.17% | 7.5178x |
+| 6 | 8.78% | 11.2767x |
+| 7 | 5.85% | 16.915x |
+| 8 | 3.90% | 25.3726x |
+
+### Payouts by difficulty
+
+Fewer tiles means a harder climb. At three levels:
+
+| Tiles | Survive a level | Chance | Payout |
+| --- | --- | --- | --- |
+| 2 | 1 in 2 | 12.50% | 7.92x |
+| 3 | 2 in 3 | 29.63% | 3.3412x |
+| 4 | 3 in 4 | 42.19% | 2.3466x |
+| 5 | 4 in 5 | 51.20% | 1.9335x |
+
+The formula is the same one every preset uses, with the outcome space being
+the whole climb: `floor(9900 * tiles^levels / (tiles - 1)^levels)`. Some of
+these do not divide evenly, so the floor keeps a fraction of a basis point
+on the house side of 99 percent. Nothing rounds in the player's favor, and
+nothing drifts past 1 percent.
+
+## Two ways to build the game
+
+This is the real design decision, and it changes the player experience more
+than any parameter.
+
+### Committed climb: one bet, one receipt
+
+The player chooses their whole path up front, you build one rule from all of
+their picks, and one play resolves the entire tower. This is what
+`towers({ picks })` models directly. It is simple, cheap (one play fee), and
+the receipt proves the full climb at once. The tradeoff is that there is no
+cash out: the player commits before seeing anything.
+
+```ts
+const picks = [1, 0, 2, 1];
+const { ruleHash } = await api("POST", "/rules", { rule: towers({ picks, tiles: 3 }) });
+const played = await api("POST", "/play", { clientSeed, ruleHash });
+
+const bombs = played.receipt.draws; // one bomb tile per level
+const hitAt = bombs.findIndex((bomb, level) => bomb === picks[level]);
+const survived = hitAt === -1 ? picks.length : hitAt;
+```
+
+### Level by level: cash out any time
+
+For the familiar climb-and-cash-out feel, play **one bet per level** with a
+one level rule. After each win the player chooses to climb again or stop,
+and their running multiplier is the product of the levels they cleared.
+
+```ts
+const oneLevel = (pick) => towers({ picks: [pick], tiles: 3 });
+
+// Each level is its own play, its own receipt, its own verifiable outcome
+async function climbOnce(clientSeed, pick) {
+    const { ruleHash } = await api("POST", "/rules", { rule: oneLevel(pick) });
+    const played = await api("POST", "/play", { clientSeed, ruleHash });
+    return { survived: played.receipt.win, bomb: played.receipt.draws[0], receipt: played };
+}
+```
+
+<Callout type="info">
+    The two shapes are not equivalent economically. Multiplying single level payouts applies the 1 percent edge at every
+    level, so a four level cash out climb pays 1.485^4 = 4.86x where a committed four level bet pays 5.0118x. Charge the
+    edge once, or charge it per level, but tell your players which one they are playing.
+</Callout>
+
+Level by level also costs one play fee per level rather than one per climb,
+which matters at scale. Committed climbs are cheaper; cash out is stickier.
+Pick deliberately.
+
+## Presentation
+
+The draws are bomb positions, not the player's path. To animate the climb,
+walk the levels yourself and stop at the first hit:
+
+```ts
+function replay(picks, bombs) {
+    const rows = [];
+    for (let level = 0; level < picks.length; level++) {
+        const hit = bombs[level] === picks[level];
+        rows.push({ level, pick: picks[level], bomb: bombs[level], hit });
+        if (hit) break; // the climb ends here
+    }
+    return rows;
+}
+```
+
+Revealing the bomb positions of levels the player never reached is a design
+choice. They are in the receipt either way, so a curious player can always
+read them; do not build a game whose fairness depends on hiding them.
+
+## Limits
+
+Sixteen levels is the ceiling because a rule may draw at most 16 numbers
+(FORESEER-SPEC section 4.2). Sixteen levels of two tiles pays 64880.64x on a
+1 in 65536 chance, which is the steepest tower the engine will build and
+still comfortably inside the payout field. Beyond that, the preset throws
+rather than silently truncating.

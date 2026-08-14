@@ -1,0 +1,132 @@
+---
+title: Gamemodes
+asIndexPage: true
+---
+
+import { Callout, Steps } from "nextra/components";
+
+# Gamemodes
+
+A gamemode in Foreseer is not a program. It is a small piece of **data**: a
+rule that says how many numbers to draw, in what range, what counts as a
+win, and what a win pays. The TEE reads that data, the verifier reads the
+same data, and the player can read it too.
+
+That is the whole trick behind provable fairness here. If a game were code
+running inside the casino, you would have to trust the code. Because a game
+is data, the rule is hashed into your receipt and everyone recomputes the
+same outcome from it.
+
+## The games we ship
+
+| Gamemode | Draws | Player picks | Best payout |
+| --- | --- | --- | --- |
+| [European roulette](/gamemodes/european-roulette) | 1 of 37 pockets | a pocket, color, or group | 36.63x straight |
+| [American roulette](/gamemodes/american-roulette) | 1 of 38 pockets | same, plus `00` | 37.62x straight |
+| [Dice](/gamemodes/dice) | 1 of 10000 | a target and a direction | up to 990x |
+| [Coinflip](/gamemodes/coinflip) | 1 of 2 | heads or tails | 1.98x |
+| [Towers](/gamemodes/towers) | 1 per level | a tile on every level | 25.37x at eight levels |
+
+Anything these do not cover, you can express yourself: the rule AST is
+public and documented in [Game rules](/rules). Presets exist because most
+casino games are the same five shapes, not because the engine is limited to
+them.
+
+## Every gamemode pays the same house edge
+
+Each preset computes its payout from the outcome count with integer math:
+
+```
+payout_bp = floor(9900 * total_outcomes / winning_outcomes)
+```
+
+9900 basis points is 99 percent return to player, so **the house edge is
+exactly 1 percent on every preset**, and no configuration can drift it. A
+bet that wins one time in 37 pays 36.63x; a bet that wins one time in 38
+pays 37.62x. Rarer wins pay more, automatically.
+
+<Callout type="info">
+    This is why American roulette is not a worse deal on Foreseer. In a traditional casino the extra pocket is pure
+    profit because a straight bet still pays 35 to 1, which is where the famous 5.26 percent edge comes from. Here the
+    payout is derived from the real odds, so the second zero raises the payout instead of the edge.
+</Callout>
+
+`payout_bp` is the **total return** on the stake, not the profit. A win at
+19800 basis points returns `stake * 19800 / 10000`, so a 10 chip stake
+returns 19.8 chips, of which 9.8 is profit.
+
+## Integrating any gamemode
+
+The flow is identical for every game. Only the rule changes.
+
+<Steps>
+
+### Build the rule
+
+```ts
+import { roulette } from "foreseer-sdk";
+
+const rule = roulette({ type: "red" });
+```
+
+### Register it once
+
+Rules are content addressed, so registering is idempotent: the same rule
+always yields the same hash, and re-registering is a no-op.
+
+```ts
+const { ruleHash } = await fetch(`${FORESEER}/rules`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": OPERATOR_KEY },
+    body: JSON.stringify({ rule }),
+}).then((r) => r.json());
+```
+
+### Play
+
+The player supplies the client seed. The nonce increments per seed inside
+the epoch, so the same player betting again always gets a fresh outcome.
+
+```ts
+const played = await fetch(`${FORESEER}/play`, {
+    method: "POST",
+    headers: { "content-type": "application/json", "x-api-key": OPERATOR_KEY },
+    body: JSON.stringify({ clientSeed, ruleHash }),
+}).then((r) => r.json());
+
+const { draws, win, payoutBp } = played.receipt;
+```
+
+### Verify before you pay
+
+Never settle on an unverified receipt. One call proves the TEE signed this
+exact result:
+
+```ts
+import { verifyReceiptSignature } from "foreseer-sdk/verify";
+
+const check = verifyReceiptSignature(played, domain, expectedTeeId);
+if (!check.ok) throw new Error("refusing to settle an unsigned result");
+```
+
+### Settle and present
+
+`draws` is the raw outcome. Turn it into your game's language, then pay:
+
+```ts
+const returned = win ? (stake * payoutBp) / 10000 : 0;
+```
+
+</Steps>
+
+A complete, runnable version of exactly this loop lives in the `demo/`
+folder of the repository: a p5.js roulette table whose backend does nothing
+more than the five steps above.
+
+## What the player gets
+
+Because the rule is hashed into the receipt, a player can prove the game
+they were shown is the game that ran. The rule hash in the receipt must
+match the hash of the rule you published; if you swap a payout or widen a
+losing range after the fact, the hash changes and every receipt stops
+verifying. See [Verify your bet](/verify) for the player side.
