@@ -14,6 +14,7 @@ export interface PlayRecord {
     draw: number;
     win: boolean;
     payoutBp: number;
+    ruleHash: string;
     signature: string;
     signatureOk: boolean;
 }
@@ -45,7 +46,7 @@ export interface EpochView {
 
 export interface TeeHandle {
     snapshot(): EpochView;
-    play(): PlayRecord;
+    play(rule?: Rule): PlayRecord;
     reveal(): RevealView;
     startNextEpoch(): EpochView;
 }
@@ -72,6 +73,7 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
     let seedCommit: `0x${string}` = "0x";
     let plays: PlayRecord[] = [];
     let signed: ReturnType<typeof tee.play>[] = [];
+    let played: Rule[] = [];
     let reveal: RevealView | null = null;
     let open = false;
 
@@ -83,6 +85,7 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
         seedCommit = started.seedCommit;
         plays = [];
         signed = [];
+        played = [];
         reveal = null;
         open = true;
     }
@@ -95,10 +98,10 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
 
     return {
         snapshot,
-        play() {
+        play(rule: Rule = config.rule) {
             if (!open) throw new Error("start a new epoch first");
             if (plays.length >= config.maxPlays) throw new Error("epoch full, reveal to continue");
-            const bet = tee.play({ clientSeed, rule: config.rule });
+            const bet = tee.play({ clientSeed, rule });
             const sigCheck = verify.verifyReceiptSignature(bet, tee.domain, tee.teeId);
             const record: PlayRecord = {
                 epochId: bet.receipt.epochId,
@@ -107,10 +110,12 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
                 draw: bet.receipt.draws[0],
                 win: bet.receipt.win,
                 payoutBp: bet.receipt.payoutBp,
+                ruleHash: core.ruleHash(rule),
                 signature: bet.signature,
                 signatureOk: sigCheck.ok,
             };
             signed.push(bet);
+            played.push(rule);
             plays.push(record);
             return record;
         },
@@ -132,9 +137,9 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
 
             const commitOk = verify.verifyCommit(closed.serverSeed, seedCommit);
             let outcomeOk = true;
-            for (const s of signed) {
-                if (!verify.verifyOutcome(s.receipt, config.rule, closed.serverSeed).ok) outcomeOk = false;
-            }
+            signed.forEach((s, i) => {
+                if (!verify.verifyOutcome(s.receipt, played[i], closed.serverSeed).ok) outcomeOk = false;
+            });
             const signatureOk = plays.every((s) => s.signatureOk);
 
             const checks: CheckRow[] = [

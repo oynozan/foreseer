@@ -2,10 +2,9 @@
 
 import { useCallback, useEffect, useRef } from "react";
 import ProofPanel from "@/components/ProofPanel";
-import { MUTED, PRIMARY, SECONDARY } from "@/lib/demo-ui";
+import { MUTED, PRIMARY, ROW, SECONDARY } from "@/lib/demo-ui";
 import {
     COIN_RULE,
-    COIN_RULE_HASH,
     FLIP_EASE,
     FLIP_MS,
     MAX_FLIPS,
@@ -116,7 +115,7 @@ export default function CoinflipDemo() {
                       : ""}
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className={`${ROW} sm:justify-end`}>
                 {phase === "revealed" ? (
                     <button type="button" onClick={nextEpoch} className={PRIMARY}>
                         Start a new epoch
@@ -143,7 +142,7 @@ export default function CoinflipDemo() {
 
             {phase === "error" && <p className="mt-4 text-[13px] text-red">{error}</p>}
 
-            <ProofPanel view={view} ruleHash={COIN_RULE_HASH} />
+            <ProofPanel view={view} />
         </div>
     );
 }

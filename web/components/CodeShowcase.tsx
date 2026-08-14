@@ -103,7 +103,11 @@ export default function CodeShowcase({ tabs }: { tabs: ShowTab[] }) {
                     <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
                         <span className="chip tech">{tab.cap}</span>
                         {tab.note && <span className="text-[12px] text-muted">{tab.note}</span>}
-                        <button onClick={copy} className="text-[12px] font-medium text-muted transition-colors hover:text-ink">
+                        <button
+                            type="button"
+                            onClick={copy}
+                            className="-my-2 -mr-2 px-2 py-2 text-[12px] font-medium text-muted transition-colors hover:text-ink"
+                        >
                             {copied ? "Copied" : "Copy"}
                         </button>
                     </div>

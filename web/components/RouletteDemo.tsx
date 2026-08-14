@@ -3,14 +3,13 @@
 import { useCallback, useEffect, useRef } from "react";
 import ProofPanel from "@/components/ProofPanel";
 import RouletteStrip from "@/components/RouletteStrip";
-import { MUTED, PRIMARY, SECONDARY } from "@/lib/demo-ui";
+import { MUTED, PRIMARY, ROW, SECONDARY } from "@/lib/demo-ui";
 import {
     GEO,
     MAX_SPINS,
     SPIN_EASE,
     SPIN_MS,
     WHEEL_RULE,
-    WHEEL_RULE_HASH,
     cellUnderMarker,
     pocketAtCell,
     restAfterSettle,
@@ -115,9 +114,9 @@ export default function RouletteDemo() {
 
     return (
         <div ref={sectionRef} data-demo="roulette" className="pt-12" aria-busy={spinning}>
-            <div className="max-w-2xl">
+            <div>
                 <h2 className="text-[clamp(28px,3.2vw,40px)] font-medium leading-[1.1] tracking-[-0.02em]">
-                    The pocket was fixed <span className="text-primary">before you spun.</span>
+                    The roll was determined <span className="text-primary">before you played.</span>
                 </h2>
                 <p className="mt-4 text-[15px] leading-relaxed text-muted">
                     The wheel spins on demand, not on a shared timer. Its seed was committed before your first spin, so
@@ -143,7 +142,7 @@ export default function RouletteDemo() {
                       : ""}
             </p>
 
-            <div className="mt-6 flex flex-wrap items-center gap-3">
+            <div className={ROW}>
                 {phase === "revealed" ? (
                     <button type="button" onClick={nextEpoch} className={PRIMARY}>
                         Start a new epoch
@@ -170,7 +169,7 @@ export default function RouletteDemo() {
 
             {phase === "error" && <p className="mt-4 text-[13px] text-red">{error}</p>}
 
-            <ProofPanel view={view} ruleHash={WHEEL_RULE_HASH} />
+            <ProofPanel view={view} />
         </div>
     );
 }

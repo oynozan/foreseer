@@ -43,22 +43,22 @@ export default function FlareSection() {
                 target="_blank"
                 rel="noreferrer"
                 aria-label="Foreseer running on Flare Confidential Compute, read the Flare docs"
-                className="group relative block px-10 pb-14 pt-6"
+                className="group relative block pt-2 md:px-10 md:pt-6 md:pb-14"
             >
                 <img
                     src="/demo/flare-3.png"
                     alt=""
-                    className={`${SHEET} ${EASE} -translate-x-5 translate-y-9 -rotate-6 scale-95 group-hover:-translate-x-9 group-hover:translate-y-11 group-hover:-rotate-9`}
+                    className={`${SHEET} ${EASE} hidden -translate-x-5 translate-y-9 -rotate-6 scale-95 md:block group-hover:-translate-x-9 group-hover:translate-y-11 group-hover:-rotate-9`}
                 />
                 <img
                     src="/demo/flare-2.png"
                     alt=""
-                    className={`${SHEET} ${EASE} translate-x-4 translate-y-4.5 rotate-3 scale-[0.975] group-hover:translate-x-7 group-hover:translate-y-6 group-hover:rotate-5`}
+                    className={`${SHEET} ${EASE} hidden translate-x-4 translate-y-4.5 rotate-3 scale-[0.975] md:block group-hover:translate-x-7 group-hover:translate-y-6 group-hover:rotate-5`}
                 />
                 <img
                     src="/demo/flare-1.png"
                     alt="The Foreseer TEE extension running on Flare Confidential Compute"
-                    className={`relative rounded-stage border border-line shadow-[0_10px_36px_rgba(29,29,29,0.10)] ${EASE} -rotate-2 group-hover:-translate-y-1.5 group-hover:rotate-0 group-hover:scale-[1.02]`}
+                    className={`relative w-full rounded-stage border border-line shadow-[0_10px_36px_rgba(29,29,29,0.10)] ${EASE} md:-rotate-2 group-hover:md:-translate-y-1.5 group-hover:md:rotate-0 group-hover:md:scale-[1.02]`}
                 />
             </a>
         </div>

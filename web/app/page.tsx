@@ -1,6 +1,7 @@
 import Band from "@/components/Band";
 import CodeSection from "@/components/CodeSection";
 import CoinflipDemo from "@/components/CoinflipDemo";
+import DiceDemo from "@/components/DiceDemo";
 import EconomySection from "@/components/EconomySection";
 import Faq from "@/components/Faq";
 import FlareSection from "@/components/FlareSection";
@@ -30,13 +31,13 @@ export default function Home() {
                         </section>
                         <section
                             id="demo-dice"
-                            data-demo="dice"
                             className="mt-10 border-t border-line pb-6 md:mt-0 md:border-t-0 md:border-l md:pl-12"
                         >
                             <div className="meta tech" aria-hidden="true">
                                 <span>[ 03 / 08 ]</span>
                                 <span>GAMES // DICE //</span>
                             </div>
+                            <DiceDemo />
                         </section>
                     </div>
                 </div>

@@ -17,9 +17,11 @@ function Field({ label, value, title, name }: { label: string; value: string; ti
     );
 }
 
-export default function ProofPanel({ view, ruleHash }: { view: EpochView | null; ruleHash: string }) {
+export default function ProofPanel({ view }: { view: EpochView | null }) {
     const reveal = view?.reveal ?? null;
     if (!view || !reveal) return null;
+    const hashes = [...new Set(view.plays.map((p) => p.ruleHash))];
+    const rule = hashes.length === 1 ? trunc(hashes[0]) : `${hashes.length} rules`;
 
     return (
         <div className="@container fade-in mt-10" data-reveal>
@@ -40,7 +42,7 @@ export default function ProofPanel({ view, ruleHash }: { view: EpochView | null;
                             title={view.seedCommit}
                         />
                         <Field name="client-seed" label="Client seed" value={view.clientSeed} />
-                        <Field name="rule" label="Rule" value={trunc(ruleHash)} title={ruleHash} />
+                        <Field name="rule" label="Rule" value={rule} title={hashes.join(", ")} />
                         <Field name="nonce" label="Plays" value={String(view.plays.length)} />
                         <Field
                             name="revealed-seed"

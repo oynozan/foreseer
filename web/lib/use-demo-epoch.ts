@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import type { Rule } from "foreseer-sdk";
 import { ensureTee, type DemoConfig, type EpochView, type PlayRecord, type TeeHandle } from "@/lib/demo-tee";
 
 export type Phase = "cold" | "arming" | "ready" | "playing" | "settled" | "revealing" | "revealed" | "error";
@@ -13,7 +14,7 @@ export interface DemoEpoch {
     error: string;
     plays: PlayRecord[];
     full: boolean;
-    play: () => Promise<void>;
+    play: (rule?: Rule) => Promise<void>;
     reveal: () => void;
     nextEpoch: () => void;
 }
@@ -78,7 +79,7 @@ export function useDemoEpoch(config: DemoConfig, animate: (record: PlayRecord) =
         return () => io.disconnect();
     }, [arm]);
 
-    const play = useCallback(async () => {
+    const play = useCallback(async (rule?: Rule) => {
         // the ref guards across the await, state cannot
         if (busyRef.current) return;
         if (phaseRef.current === "revealing" || phaseRef.current === "revealed") return;
@@ -92,7 +93,7 @@ export function useDemoEpoch(config: DemoConfig, animate: (record: PlayRecord) =
 
         let record: PlayRecord;
         try {
-            record = handle.play();
+            record = handle.play(rule);
         } catch (err) {
             busyRef.current = false;
             setError(err instanceof Error ? err.message : "play failed");
