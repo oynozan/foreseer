@@ -44,7 +44,7 @@ if (/\b2px solid\b/.test(css)) fail("2px border in globals.css");
 else ok("no 2px borders");
 
 // prerendered page checks
-const REQUIRED_IDS = [];
+const REQUIRED_IDS = ["hero", "demo-dice", "demo-coinflip", "demo-roulette", "code", "how-it-works", "faq"];
 const htmlPath = join(root, ".next", "server", "app", "index.html");
 if (existsSync(htmlPath)) {
     const page = readFileSync(htmlPath, "utf8");
