@@ -23,6 +23,11 @@ CREATE TABLE IF NOT EXISTS epochs (
     receipt_count INTEGER,
     close_signature TEXT
 );
+CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    wallet TEXT NOT NULL,
+    expires INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS deposits (
     tx_hash TEXT PRIMARY KEY,
     operator_id INTEGER NOT NULL REFERENCES operators(id),
@@ -57,6 +62,9 @@ export function openDb(path: string): Database.Database {
     if (!cols.some((c) => c.name === "owner_wallet")) {
         db.exec("ALTER TABLE operators ADD COLUMN owner_wallet TEXT");
     }
+    if (!cols.some((c) => c.name === "active")) {
+        db.exec("ALTER TABLE operators ADD COLUMN active INTEGER NOT NULL DEFAULT 1");
+    }
     const receiptCols = db.prepare("PRAGMA table_info(receipts)").all() as { name: string }[];
     if (!receiptCols.some((c) => c.name === "price_wei")) {
         db.exec("ALTER TABLE receipts ADD COLUMN price_wei TEXT NOT NULL DEFAULT '0'");
@@ -70,6 +78,7 @@ export interface OperatorRow {
     api_key_hash: string;
     created_at: number;
     owner_wallet: string | null;
+    active: number;
 }
 
 export interface DepositRow {

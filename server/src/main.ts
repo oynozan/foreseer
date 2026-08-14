@@ -4,7 +4,7 @@ import { dirname } from "node:path";
 import { openDb } from "./db";
 import { Engine } from "./engine";
 import { createApp } from "./app.module";
-import { rpcChain } from "./wallet";
+import { rpcChain, WalletSessions } from "./wallet";
 import type { Hex } from "foreseer-sdk";
 
 async function bootstrap(): Promise<void> {
@@ -19,6 +19,8 @@ async function bootstrap(): Promise<void> {
     const playLimit = Number(process.env.FORESEER_PLAY_LIMIT ?? 60);
     const playWindowSeconds = Number(process.env.FORESEER_PLAY_WINDOW_SECONDS ?? 10);
     const pricePerPlayWei = process.env.FORESEER_PRICE_PER_PLAY_WEI ?? "0";
+    const readLimit = Number(process.env.FORESEER_READ_LIMIT ?? 300);
+    const readWindowSeconds = Number(process.env.FORESEER_READ_WINDOW_SECONDS ?? 10);
     const chainRpc = process.env.FORESEER_CHAIN_RPC ?? "https://coston2-api.flare.network/ext/C/rpc";
     const treasury = process.env.FORESEER_TREASURY;
 
@@ -46,9 +48,14 @@ async function bootstrap(): Promise<void> {
     const epoch = engine.ensureEpoch();
     console.log(`epoch ${epoch.epoch_id} open, commit ${epoch.seed_commit}`);
 
+    // A scheduler fault must never take the process down
     const timer = setInterval(() => {
-        const t = engine.tick();
-        if (t.closed !== null) console.log(`epoch ${t.closed} closed, epoch ${t.open} open`);
+        try {
+            const t = engine.tick();
+            if (t.closed !== null) console.log(`epoch ${t.closed} closed, epoch ${t.open} open`);
+        } catch (error) {
+            console.error("epoch tick failed, retrying next interval:", (error as Error).message);
+        }
     }, 5000);
 
     const app = await createApp({
@@ -57,7 +64,10 @@ async function bootstrap(): Promise<void> {
         adminKey,
         playLimit,
         playWindowSeconds,
+        readLimit,
+        readWindowSeconds,
         pricePerPlayWei,
+        sessions: new WalletSessions(undefined, undefined, undefined, db),
         ...(treasury === undefined ? {} : { chain: rpcChain(chainRpc, treasury) }),
     });
     await app.listen(port);

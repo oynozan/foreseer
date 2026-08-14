@@ -2,8 +2,9 @@
 node_modules/
 dist/
 
-# local databases
+# local databases and their backups
 data/
+backups/
 *.db
 *.db-journal
 *.db-wal

@@ -1,14 +1,15 @@
 import "reflect-metadata";
 import { Module } from "@nestjs/common";
 import type { DynamicModule } from "@nestjs/common";
-import { APP_FILTER, NestFactory } from "@nestjs/core";
+import { APP_FILTER, APP_GUARD, NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import type Database from "better-sqlite3";
 import type { Engine } from "./engine";
 import { ApiExceptionFilter } from "./filters";
+import { ReadRateGuard } from "./guards";
 import { WalletSessions } from "./wallet";
 import type { ChainGateway } from "./wallet";
-import { ADMIN_KEY, CHAIN, DB, ENGINE, PLAY_RATE, PRICE_PER_PLAY_WEI, SESSIONS } from "./tokens";
+import { ADMIN_KEY, CHAIN, DB, ENGINE, PLAY_RATE, PRICE_PER_PLAY_WEI, READ_RATE, SESSIONS } from "./tokens";
 import {
     AdminController,
     AuthController,
@@ -29,6 +30,8 @@ export interface AppOptions {
     adminKey: string;
     playLimit?: number;
     playWindowSeconds?: number;
+    readLimit?: number;
+    readWindowSeconds?: number;
     pricePerPlayWei?: string;
     chain?: ChainGateway;
     sessions?: WalletSessions;
@@ -61,7 +64,12 @@ export class AppModule {
                 { provide: PRICE_PER_PLAY_WEI, useValue: BigInt(options.pricePerPlayWei ?? "0").toString() },
                 { provide: CHAIN, useValue: options.chain ?? null },
                 { provide: SESSIONS, useValue: options.sessions ?? new WalletSessions() },
+                {
+                    provide: READ_RATE,
+                    useValue: { limit: options.readLimit ?? 300, windowSeconds: options.readWindowSeconds ?? 10 },
+                },
                 { provide: APP_FILTER, useClass: ApiExceptionFilter },
+                { provide: APP_GUARD, useClass: ReadRateGuard },
             ],
         };
     }

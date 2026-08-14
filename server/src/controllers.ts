@@ -11,6 +11,7 @@ import {
     verifyMerkleProof,
 } from "foreseer-sdk";
 import { verifyOutcome } from "foreseer-sdk/verify";
+import { REFERENCE_CODE_VERSION } from "foreseer-sdk/reference";
 import type { Hex, Receipt, Rule } from "foreseer-sdk";
 import { ApiError, rowToReceipt } from "./engine";
 import type { Engine } from "./engine";
@@ -96,6 +97,7 @@ function epochJson(row: EpochRow) {
     const closed = row.closed_at !== null;
     return {
         epochId: row.epoch_id,
+        codeVersion: REFERENCE_CODE_VERSION,
         seedCommit: row.seed_commit,
         openedAt: row.opened_at,
         closedAt: row.closed_at,
@@ -196,6 +198,17 @@ export class AdminController {
         }
         const row = this.db.prepare("SELECT * FROM operators WHERE name = ?").get(name) as unknown as OperatorRow;
         return { id: row.id, name: row.name, ownerWallet: row.owner_wallet, apiKey };
+    }
+
+    @Post("operators/:id/active")
+    @HttpCode(200)
+    setActive(@Param("id") idRaw: string, @Body() body: unknown) {
+        const id = intParam(idRaw);
+        const active = (body as { active?: unknown })?.active;
+        if (typeof active !== "boolean") throw new ApiError(400, "active must be a boolean");
+        const result = this.db.prepare("UPDATE operators SET active = ? WHERE id = ?").run(active ? 1 : 0, id);
+        if (result.changes === 0) throw new ApiError(404, "unknown operator");
+        return { operatorId: id, active };
     }
 
     @Post("close")

@@ -1,5 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { keccak_256 } from "@noble/hashes/sha3.js";
+import type Database from "better-sqlite3";
 import { recoverSigner } from "foreseer-sdk";
 import type { Hex } from "foreseer-sdk";
 import { ApiError } from "./engine";
@@ -54,16 +55,28 @@ function prune(map: Map<string, Entry>, now: number): void {
     while (map.size >= MAP_CAP) map.delete(map.keys().next().value!);
 }
 
-// ponytail: in-memory sessions, restart logs everyone out
+// Sessions survive a restart when a database is supplied
 export class WalletSessions {
     private readonly nonces = new Map<string, Entry>();
     private readonly tokens = new Map<string, Entry>();
+    private readonly db: Database.Database | undefined;
 
     constructor(
         private readonly now: () => number = () => Math.floor(Date.now() / 1000),
         private readonly nonceTtl = 300,
         private readonly tokenTtl = 86400,
-    ) {}
+        db?: Database.Database,
+    ) {
+        this.db = db;
+        if (db !== undefined) {
+            const rows = db.prepare("SELECT token, wallet, expires FROM sessions WHERE expires >= ?").all(this.now()) as {
+                token: string;
+                wallet: string;
+                expires: number;
+            }[];
+            for (const row of rows) this.tokens.set(row.token, { value: row.wallet, expires: row.expires });
+        }
+    }
 
     issueNonce(wallet: string): { nonce: string; message: string } {
         prune(this.nonces, this.now());
@@ -84,6 +97,12 @@ export class WalletSessions {
         const token = `fst_${randomBytes(24).toString("hex")}`;
         const expiresAt = this.now() + this.tokenTtl;
         this.tokens.set(token, { value: wallet, expires: expiresAt });
+        if (this.db !== undefined) {
+            this.db.prepare("DELETE FROM sessions WHERE expires < ?").run(this.now());
+            this.db
+                .prepare("INSERT OR REPLACE INTO sessions (token, wallet, expires) VALUES (?, ?, ?)")
+                .run(token, wallet, expiresAt);
+        }
         return { token, expiresAt };
     }
 

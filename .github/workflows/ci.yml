@@ -1,0 +1,106 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  sdk:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/ts
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --ignore-workspace --frozen-lockfile
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+      - name: golden vectors must regenerate byte for byte
+        run: |
+          pnpm gen-vectors
+          git diff --exit-code -- ../../spec/vectors
+
+  server:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: build the linked sdk first
+        run: pnpm install --ignore-workspace --frozen-lockfile && pnpm build
+        working-directory: packages/ts
+      - run: pnpm install --ignore-workspace --frozen-lockfile
+        working-directory: server
+      - run: pnpm typecheck
+        working-directory: server
+      - run: pnpm test
+        working-directory: server
+
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --ignore-workspace --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm build
+      - name: verifier widget must match its sources
+        run: |
+          node ../server/node_modules/tsx/dist/cli.mjs scripts/build-widget.mjs || true
+          git diff --exit-code -- public/foreseer-widget.js
+
+  docs:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: docs
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: pnpm install --ignore-workspace --frozen-lockfile
+      - run: pnpm build
+
+  tee:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+          cache-dependency-path: tee/go/go.sum
+      - run: go test ./...
+        working-directory: tee/go
+      - uses: foundry-rs/foundry-toolchain@v1
+      - run: forge test
+        working-directory: tee

@@ -1,0 +1,35 @@
+# From the repo root: docker compose -f server/docker-compose.yaml up -d
+services:
+  foreseer-server:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    ports:
+      - "8787:8787"
+    volumes:
+      - foreseer-data:/data
+    environment:
+      FORESEER_ADMIN_KEY: ${FORESEER_ADMIN_KEY:?set it, the server refuses the dev default}
+      FORESEER_TEE_KEY: ${FORESEER_TEE_KEY:?must match the deployed contract teeId}
+      FORESEER_TREASURY: ${FORESEER_TREASURY:-}
+      FORESEER_PRICE_PER_PLAY_WEI: ${FORESEER_PRICE_PER_PLAY_WEI:-0}
+      FORESEER_EPOCH_SECONDS: ${FORESEER_EPOCH_SECONDS:-300}
+      FORESEER_CHAIN_RPC: ${FORESEER_CHAIN_RPC:-https://coston2-api.flare.network/ext/C/rpc}
+      FORESEER_READ_LIMIT: ${FORESEER_READ_LIMIT:-300}
+
+  backup:
+    build:
+      context: ..
+      dockerfile: server/Dockerfile
+    restart: unless-stopped
+    volumes:
+      - foreseer-data:/data
+      - foreseer-backups:/backups
+    environment:
+      FORESEER_DB: /data/foreseer.db
+    entrypoint: ["sh", "-c", "while true; do node scripts/backup.mjs /backups; sleep 3600; done"]
+
+volumes:
+  foreseer-data:
+  foreseer-backups:

@@ -1,37 +1,45 @@
 {
-  "name": "foreseer-server",
-  "version": "0.1.0",
-  "private": true,
-  "description": "Foreseer orchestration service: epochs, receipt store, verify API, operator keys",
-  "license": "MIT",
-  "engines": {
-    "node": ">=22"
-  },
-  "scripts": {
-    "dev": "tsx watch src/main.ts",
-    "start": "tsx src/main.ts",
-    "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "format": "prettier --write ."
-  },
-  "dependencies": {
-    "@nestjs/common": "^11.1.29",
-    "@nestjs/core": "^11.1.29",
-    "@nestjs/platform-express": "^11.1.29",
-    "@noble/hashes": "^2.3.0",
-    "better-sqlite3": "^13.0.3",
-    "foreseer-sdk": "file:../packages/ts",
-    "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2"
-  },
-  "devDependencies": {
-    "@swc/core": "^1.15.47",
-    "@types/better-sqlite3": "^9.6.0",
-    "@types/node": "^26.2.0",
-    "prettier": "^3.9.6",
-    "tsx": "^4.23.12",
-    "typescript": "6",
-    "unplugin-swc": "^1.5.11",
-    "vitest": "^4.1.10"
-  }
+    "name": "foreseer-server",
+    "version": "0.1.0",
+    "private": true,
+    "description": "Foreseer orchestration service: epochs, receipt store, verify API, operator keys",
+    "license": "MIT",
+    "engines": {
+        "node": ">=22"
+    },
+    "scripts": {
+        "dev": "tsx watch src/main.ts",
+        "start": "tsx src/main.ts",
+        "typecheck": "tsc --noEmit",
+        "test": "vitest run",
+        "format": "prettier --write ."
+    },
+    "dependencies": {
+        "@nestjs/common": "^11.1.29",
+        "@nestjs/core": "^11.1.29",
+        "@nestjs/platform-express": "^11.1.29",
+        "@noble/hashes": "^2.3.0",
+        "better-sqlite3": "^13.0.3",
+        "foreseer-sdk": "file:../packages/ts",
+        "reflect-metadata": "^0.2.2",
+        "rxjs": "^7.8.2"
+    },
+    "devDependencies": {
+        "@swc/core": "^1.15.47",
+        "@types/better-sqlite3": "^9.6.0",
+        "@types/node": "^26.2.0",
+        "ethers": "^6.17.0",
+        "prettier": "^3.9.6",
+        "tsx": "^4.23.12",
+        "typescript": "6",
+        "unplugin-swc": "^1.5.11",
+        "vitest": "^4.1.10"
+    },
+    "pnpm": {
+        "onlyBuiltDependencies": [
+            "better-sqlite3",
+            "@swc/core",
+            "esbuild"
+        ]
+    }
 }
