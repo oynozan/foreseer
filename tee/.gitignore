@@ -61,3 +61,5 @@ DEPLOYMENT.md
 
 config/**/*.log
 config/register-tee.state
+# release image tars are hand-off artifacts, never committed
+*.tar

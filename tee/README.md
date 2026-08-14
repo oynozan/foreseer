@@ -101,6 +101,15 @@ Registered 2026-08-14 in the `FlareTeeManager` diamond at
 `tools/cmd/query-tee -ext 0x...0102c2` confirms the extension over public RPC
 (zero active TEE machines until a Confidential Space VM is attached).
 
+Release image (reproducible, SOURCE_DATE_EPOCH from the last root commit):
+
+| Item | Value |
+| --- | --- |
+| Tag | `foreseer-tee:v0.1.0` |
+| Digest | `sha256:3f1f479d284e344f6e3e768c828fe9452052c5f09250a6754699f45bdbc3ce15` |
+| Hand-off tar | `foreseer-tee-v0.1.0.tar` (gitignored) |
+| MODE | `1` baked, `MODE` is in `tee.launch_policy.allow_env_override`, launch with `MODE=0` |
+
 Remaining hand-off (needs infrastructure outside this repo): deploy the
 release image on a GCP Confidential Space VM with
 `INITIAL_OWNER`, `CHAIN_URL`, `EXTENSION_ID`, `PROXY_URL` and `MODE=0`,
