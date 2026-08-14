@@ -16,6 +16,10 @@ const QA: [string, string][] = [
         "Only as far as Flare attestation: the registry binds the TEE's identity address to a measured image, and that address is what every signature check expects. Even if the enclave were broken, the commitment scheme still exposes tampering after the fact; what weakens is pre-reveal secrecy, not verifiability.",
     ],
     [
+        "Is the TEE live right now?",
+        "Not yet, and the difference matters. The Go engine, the attested image, and the contracts are real: the golden epoch is committed, anchored, and proof-verified on Coston2, and the extension is registered. But no Confidential Space VM is attached yet, so there are zero active TEE machines, and the reference server generates and stores epoch seeds itself, which it says plainly in its own code and README. Onchain anchoring is a manual step today, not an automated one. None of the verification math changes when the enclave is attached; what changes is who holds the seed.",
+    ],
+    [
         "Can operators build their own games?",
         "Yes. Rules are JSON data, not code: draws, comparisons, and, or, not, and mod, hashed canonically into every receipt. Dice and coinflip ship as presets; the docs build a three-card matching-ranks game from the same grammar. No implementation ever runs operator-supplied code.",
     ],
@@ -59,7 +63,8 @@ function Item({ q, a, open, onToggle }: { q: string; a: string; open: boolean; o
 
 export default function Faq() {
     const [open, setOpen] = useState<number | null>(0);
-    const cols = [QA.slice(0, 4), QA.slice(4)];
+    const half = Math.ceil(QA.length / 2);
+    const cols = [QA.slice(0, half), QA.slice(half)];
 
     return (
         <div className="pt-12">
@@ -70,7 +75,7 @@ export default function Faq() {
                 {cols.map((col, c) => (
                     <div key={c} className="border-t border-line">
                         {col.map(([q, a], i) => {
-                            const idx = c * 4 + i;
+                            const idx = c * half + i;
                             return (
                                 <Item
                                     key={q}

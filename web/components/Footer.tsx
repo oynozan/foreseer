@@ -29,8 +29,8 @@ export default function Footer() {
                 <div>
                     <img src="/text-logo.svg" alt="Foreseer" className="h-7 w-auto" />
                     <p className="mt-5 max-w-72 text-sm leading-relaxed text-muted">
-                        Provably fair outcomes for iGaming, on Flare Confidential Compute. Verify any bet in your
-                        browser.
+                        Provably fair outcome infrastructure for iGaming, on Flare Confidential Compute. Verify any bet
+                        in your browser.
                     </p>
                 </div>
                 {COLUMNS.map(([title, links]) => (

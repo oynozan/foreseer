@@ -20,9 +20,9 @@ const ubuntuMono = Ubuntu_Mono({
 });
 
 export const metadata: Metadata = {
-    title: "Foreseer · Provably fair outcomes for iGaming, verifiable in your browser",
+    title: "Foreseer · Provably fair outcome infrastructure for iGaming",
     description:
-        "Provably fair engine for iGaming on Flare Confidential Compute. Seeds committed onchain before any bet, EIP-712 signed receipts, and six checks anyone can recompute.",
+        "Outcome infrastructure for iGaming operators on Flare Confidential Compute. Seeds committed onchain before any bet, EIP-712 signed receipts, and six checks anyone can recompute.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

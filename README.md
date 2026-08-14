@@ -1,6 +1,7 @@
 # Foreseer
 
-Provably-fair engine for iGaming built on Flare Confidential Compute (FCC) TEEs.
+Provably fair outcome infrastructure for iGaming, built on Flare Confidential
+Compute (FCC) TEEs.
 
 Game outcomes are produced inside a TEE. Per epoch, the TEE generates a secret
 `serverSeed`, publishes `SHA256(serverSeed)` onchain as a commitment, then

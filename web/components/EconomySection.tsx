@@ -26,7 +26,8 @@ export default function EconomySection() {
                     Plug in your service, <span className="text-primary">pay per play.</span>
                 </h2>
                 <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
-                    Usage is metered per operator. Fairness is enforced by the protocol, not by trust in us.
+                    Foreseer is one layer of your stack: the outcome engine. You keep the players, the funds, and the
+                    front end. Usage is metered per operator, and fairness is enforced by the protocol.
                 </p>
             </div>
             <div className="mt-10 grid gap-4 md:grid-cols-3">
