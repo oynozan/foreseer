@@ -68,18 +68,41 @@ $("example").addEventListener("click", () => {
     $("results").innerHTML = "<p>Golden vector loaded, press Verify.</p>";
 });
 
+async function loadIntoForm() {
+    const data = await loadFromServer($("server").value.trim(), Number($("epochId").value), Number($("betId").value));
+    $("receipt").value = JSON.stringify({ receipt: data.receipt, signature: data.signature }, null, 2);
+    $("rule").value = JSON.stringify(data.rule);
+    $("serverSeed").value = data.serverSeed;
+    $("seedCommit").value = data.seedCommit;
+    $("merkleRoot").value = data.merkleRoot;
+    $("proof").value = JSON.stringify(data.proof);
+    if (data.teeId) $("teeId").value = data.teeId;
+}
+
 $("load").addEventListener("click", async () => {
     try {
-        const data = await loadFromServer($("server").value.trim(), Number($("epochId").value), Number($("betId").value));
-        $("receipt").value = JSON.stringify({ receipt: data.receipt, signature: data.signature }, null, 2);
-        $("rule").value = JSON.stringify(data.rule);
-        $("serverSeed").value = data.serverSeed;
-        $("seedCommit").value = data.seedCommit;
-        $("merkleRoot").value = data.merkleRoot;
-        $("proof").value = JSON.stringify(data.proof);
-        if (data.teeId) $("teeId").value = data.teeId;
+        await loadIntoForm();
         $("results").innerHTML = "<p>Loaded from server, press Verify.</p>";
     } catch (e) {
         $("results").innerHTML = `<p class="verdict red">${e.message}</p>`;
     }
 });
+
+// Deep link: /verify?server=...&epoch=7&bet=42 loads and checks itself
+(async () => {
+    const q = new URLSearchParams(window.location.search);
+    const server = q.get("server");
+    const epoch = q.get("epoch");
+    const bet = q.get("bet");
+    if (server === null || epoch === null || bet === null) return;
+    $("server").value = server;
+    $("epochId").value = epoch;
+    $("betId").value = bet;
+    $("results").innerHTML = `<p>Loading bet ${bet} of epoch ${epoch}...</p>`;
+    try {
+        await loadIntoForm();
+        render(runChecks(inputs()));
+    } catch (e) {
+        $("results").innerHTML = `<p class="verdict red">${e.message}</p>`;
+    }
+})();

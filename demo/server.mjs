@@ -110,6 +110,7 @@ async function proofFor(epochId, betId) {
         epochId,
         betId,
         apiBase: cfg.api,
+        verifyUrl: cfg.verifyUrl,
         receipt: entry.receipt,
         signature: entry.signature,
         digest: toHex(digest),

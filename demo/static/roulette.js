@@ -268,9 +268,13 @@ function proofHtml(d) {
         ),
     );
     const api = `${d.apiBase}/epochs/${d.epochId}`;
+    const independent =
+        `${d.verifyUrl}?server=${encodeURIComponent(d.apiBase)}&epoch=${d.epochId}&bet=${d.betId}`;
     return (
         `<div class="proof">${parts.join("")}` +
-        `<p class="proof-links">Do not take this page's word for it. The raw data is public, no key needed: ` +
+        `<p class="proof-links"><a class="recheck" href="${independent}" target="_blank">Recheck it yourself</a>` +
+        ` opens the independent verifier, which redoes all of this in your own browser. ` +
+        `Raw data, no key needed: ` +
         `<a href="${api}" target="_blank">epoch</a> · ` +
         `<a href="${api}/receipts" target="_blank">receipts</a> · ` +
         `<a href="${api}/proof/${d.betId}" target="_blank">proof</a> · ` +

@@ -10,6 +10,7 @@ export const cfg = {
     operatorKey: process.env.DEMO_OPERATOR_KEY,
     walletKey: process.env.DEMO_WALLET_KEY,
     rpc: process.env.CHAIN_RPC ?? "https://coston2-api.flare.network/ext/C/rpc",
+    verifyUrl: process.env.DEMO_VERIFY_URL ?? "http://localhost:3000/verify",
     funderKey: process.env.FUNDER_KEY,
     port: Number(process.env.DEMO_PORT ?? 8788),
 };
