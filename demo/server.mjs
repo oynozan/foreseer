@@ -1,0 +1,154 @@
+import { createServer } from "node:http";
+import { readFile } from "node:fs/promises";
+import { extname, join, normalize } from "node:path";
+import { fileURLToPath } from "node:url";
+import { CLIENT_SEED_RE, ruleHash } from "foreseer-sdk";
+import { verifyReceiptSignature } from "foreseer-sdk/verify";
+import { api, apiRaw, cfg, operatorHeaders } from "./config.mjs";
+
+export const RED = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
+const BLACK = Array.from({ length: 36 }, (_, i) => i + 1).filter((n) => !RED.includes(n));
+
+// Exact 99 percent RTP: straight 36.63x, color 2.035x
+const eq = (n) => ({ op: "==", l: { r: 0 }, r: { c: n } });
+const random = { type: "int", min: 0, max: 36, count: 1 };
+
+export function ruleFor(bet) {
+    if (bet?.type === "straight" && Number.isInteger(bet.number) && bet.number >= 0 && bet.number <= 36) {
+        return { v: 0, random, win: eq(bet.number), payout_bp: 366300 };
+    }
+    if (bet?.type === "red" || bet?.type === "black") {
+        const set = bet.type === "red" ? RED : BLACK;
+        return { v: 0, random, win: { op: "or", args: set.map(eq) }, payout_bp: 20350 };
+    }
+    return null;
+}
+
+export function colorOf(n) {
+    if (n === 0) return "green";
+    return RED.includes(n) ? "red" : "black";
+}
+
+const health = await api("GET", "/health");
+const domain = { name: "Foreseer", version: "0", chainId: BigInt(health.chainId) };
+console.log(`foreseer at ${cfg.api}, teeId ${health.teeId}, chainId ${health.chainId}`);
+
+const registered = new Set();
+async function ensureRegistered(rule) {
+    const hash = ruleHash(rule);
+    if (!registered.has(hash)) {
+        await api("POST", "/rules", { rule }, operatorHeaders());
+        registered.add(hash);
+    }
+    return hash;
+}
+
+function toReceipt(json) {
+    return {
+        ...json,
+        epochId: BigInt(json.epochId),
+        betId: BigInt(json.betId),
+        nonce: BigInt(json.nonce),
+        timestamp: BigInt(json.timestamp),
+    };
+}
+
+async function spin(body) {
+    if (typeof body?.clientSeed !== "string" || !CLIENT_SEED_RE.test(body.clientSeed)) {
+        return { status: 400, json: { error: "clientSeed must match ^[A-Za-z0-9_-]{1,64}$" } };
+    }
+    const rule = ruleFor(body.bet);
+    if (rule === null) return { status: 400, json: { error: "bet must be straight 0..36, red, or black" } };
+    const hash = await ensureRegistered(rule);
+    const played = await apiRaw("POST", "/play", { clientSeed: body.clientSeed, ruleHash: hash }, operatorHeaders());
+    if (played.status === 402) return { status: 402, json: { error: "casino balance empty, run: node topup.mjs" } };
+    if (played.status !== 201) return { status: 502, json: { error: `foreseer /play failed: ${played.status}` } };
+    const { receipt, signature, epochId, betId } = played.json;
+    // The casino trusts nothing unsigned: check before paying out
+    const check = verifyReceiptSignature({ receipt: toReceipt(receipt), signature }, domain, health.teeId);
+    if (!check.ok) return { status: 502, json: { error: `receipt signature rejected: ${check.error}` } };
+    const number = receipt.draws[0];
+    return {
+        status: 200,
+        json: {
+            epochId,
+            betId,
+            nonce: receipt.nonce,
+            number,
+            color: colorOf(number),
+            win: receipt.win,
+            payoutBp: receipt.payoutBp,
+            receipt,
+            signature,
+        },
+    };
+}
+
+const staticDir = fileURLToPath(new URL("static", import.meta.url));
+const p5Path = fileURLToPath(new URL("node_modules/p5/lib/p5.min.js", import.meta.url));
+const MIME = { ".html": "text/html", ".js": "text/javascript", ".css": "text/css", ".svg": "image/svg+xml" };
+
+async function serveStatic(res, urlPath) {
+    const rel = urlPath === "/" ? "index.html" : urlPath.slice(1);
+    const file = normalize(join(staticDir, rel));
+    if (!file.startsWith(staticDir)) return send(res, 404, { error: "not found" });
+    try {
+        const data = await readFile(urlPath === "/p5.min.js" ? p5Path : file);
+        res.writeHead(200, { "content-type": MIME[extname(file)] ?? "application/octet-stream" });
+        res.end(data);
+    } catch {
+        send(res, 404, { error: "not found" });
+    }
+}
+
+function send(res, status, json) {
+    res.writeHead(status, { "content-type": "application/json" });
+    res.end(JSON.stringify(json));
+}
+
+function readBody(req) {
+    return new Promise((resolve) => {
+        let data = "";
+        req.on("data", (chunk) => {
+            data += chunk;
+            if (data.length > 16384) req.destroy();
+        });
+        req.on("end", () => {
+            try {
+                resolve(JSON.parse(data));
+            } catch {
+                resolve(undefined);
+            }
+        });
+    });
+}
+
+const server = createServer(async (req, res) => {
+    const url = new URL(req.url, "http://localhost");
+    try {
+        if (req.method === "POST" && url.pathname === "/api/spin") {
+            const out = await spin(await readBody(req));
+            return send(res, out.status, out.json);
+        }
+        if (req.method === "GET" && url.pathname === "/api/state") {
+            const [epoch, balance] = await Promise.all([
+                api("GET", "/epochs/current"),
+                api("GET", "/billing/balance", undefined, operatorHeaders()),
+            ]);
+            return send(res, 200, { epoch, balance, teeId: health.teeId, chainId: health.chainId });
+        }
+        const verifyMatch = url.pathname.match(/^\/api\/verify\/(\d+)\/(\d+)$/);
+        if (req.method === "GET" && verifyMatch) {
+            const out = await apiRaw("GET", `/verify/${verifyMatch[1]}/${verifyMatch[2]}`);
+            return send(res, out.status, out.json);
+        }
+        if (req.method === "GET") return serveStatic(res, url.pathname);
+        return send(res, 404, { error: "not found" });
+    } catch (err) {
+        return send(res, 502, { error: err.message });
+    }
+});
+
+server.listen(cfg.port, () => {
+    console.log(`demo casino on http://localhost:${cfg.port}`);
+});

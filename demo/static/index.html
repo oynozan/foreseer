@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Foreseer Roulette Demo</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+        <link
+            href="https://fonts.googleapis.com/css2?family=Akt:wght@300..800&family=Ubuntu:wght@400;500;700&display=swap"
+            rel="stylesheet"
+        />
+        <link rel="stylesheet" href="/style.css" />
+    </head>
+    <body>
+        <header>
+            <h1>Roulette <span>on Foreseer</span></h1>
+            <p id="fair-strip">connecting to the casino backend...</p>
+        </header>
+        <main>
+            <section id="wheel"></section>
+            <section id="panel">
+                <div class="field">
+                    <label>Bet</label>
+                    <div id="bet-buttons">
+                        <button data-bet="red" class="bet red selected">Red 2.035x</button>
+                        <button data-bet="black" class="bet black">Black 2.035x</button>
+                        <button data-bet="straight" class="bet straight">Number 36.63x</button>
+                    </div>
+                    <input id="number" type="number" min="0" max="36" value="17" disabled />
+                </div>
+                <div class="field">
+                    <label for="stake">Stake (chips)</label>
+                    <input id="stake" type="number" min="1" max="100" value="10" />
+                </div>
+                <div class="field">
+                    <label for="seed">Client seed (yours, changes the outcome)</label>
+                    <div class="seed-row">
+                        <input id="seed" type="text" maxlength="64" />
+                        <button id="reseed" title="regenerate">&#8635;</button>
+                    </div>
+                </div>
+                <button id="spin">SPIN</button>
+                <p id="chips">Chips: 1000</p>
+                <p id="message"></p>
+            </section>
+        </main>
+        <section id="history-wrap">
+            <h2>Spins</h2>
+            <table id="history">
+                <thead>
+                    <tr>
+                        <th>Result</th>
+                        <th>Bet</th>
+                        <th>Net</th>
+                        <th>Epoch / bet / nonce</th>
+                        <th>Signature</th>
+                        <th>Checks</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </section>
+        <script src="/p5.min.js"></script>
+        <script src="/roulette.js"></script>
+    </body>
+</html>

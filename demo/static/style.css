@@ -1,0 +1,223 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+}
+
+body {
+    font-family: "Akt", sans-serif;
+    background: #ffffff;
+    color: #1d1d1d;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px;
+}
+
+header h1 {
+    font-size: 40px;
+    font-weight: 700;
+}
+
+header h1 span {
+    color: #ff6200;
+}
+
+#fair-strip {
+    font-family: "Ubuntu", sans-serif;
+    font-size: 13px;
+    background: #d0fccd;
+    border-radius: 8px;
+    padding: 8px 12px;
+    margin-top: 12px;
+    overflow-wrap: anywhere;
+}
+
+main {
+    display: flex;
+    gap: 40px;
+    margin-top: 24px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+}
+
+#wheel canvas {
+    display: block;
+}
+
+#panel {
+    flex: 1;
+    min-width: 300px;
+    max-width: 420px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.field label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
+
+#bet-buttons {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+button {
+    font-family: "Akt", sans-serif;
+    font-size: 15px;
+    border: 2px solid #1d1d1d;
+    border-radius: 8px;
+    background: #ffffff;
+    color: #1d1d1d;
+    padding: 8px 14px;
+    cursor: pointer;
+}
+
+.bet.red {
+    border-color: #c22b2b;
+    color: #c22b2b;
+}
+
+.bet.black {
+    border-color: #1d1d1d;
+}
+
+.bet.straight {
+    border-color: #ff6200;
+    color: #ff6200;
+}
+
+.bet.selected,
+.bet.red.selected,
+.bet.black.selected,
+.bet.straight.selected {
+    background: #1d1d1d;
+    border-color: #1d1d1d;
+    color: #ffffff;
+}
+
+input {
+    font-family: "Ubuntu", sans-serif;
+    font-size: 15px;
+    border: 2px solid #1d1d1d;
+    border-radius: 8px;
+    padding: 8px 10px;
+    width: 100%;
+}
+
+#number {
+    width: 100px;
+}
+
+#number:disabled {
+    opacity: 0.4;
+}
+
+.seed-row {
+    display: flex;
+    gap: 8px;
+}
+
+#reseed {
+    flex-shrink: 0;
+    font-size: 18px;
+}
+
+#spin {
+    background: #ff6200;
+    border-color: #ff6200;
+    color: #ffffff;
+    font-size: 22px;
+    font-weight: 700;
+    padding: 14px;
+}
+
+#spin:disabled {
+    opacity: 0.5;
+    cursor: wait;
+}
+
+#chips {
+    font-size: 20px;
+    font-weight: 700;
+}
+
+#message {
+    min-height: 20px;
+    color: #ff6200;
+    font-weight: 600;
+}
+
+#history-wrap {
+    margin-top: 32px;
+}
+
+#history {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 14px;
+}
+
+#history th,
+#history td {
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 1px solid #eee;
+}
+
+#history .num {
+    display: inline-block;
+    min-width: 34px;
+    text-align: center;
+    border-radius: 50%;
+    padding: 7px 0;
+    color: #ffffff;
+    font-family: "Ubuntu", sans-serif;
+    font-weight: 700;
+}
+
+#history .num.red {
+    background: #c22b2b;
+}
+
+#history .num.black {
+    background: #1d1d1d;
+}
+
+#history .num.green {
+    background: #1c8a3c;
+}
+
+#history .ids {
+    font-family: "Ubuntu", sans-serif;
+    font-size: 13px;
+}
+
+.badge {
+    display: inline-block;
+    border-radius: 6px;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    background: #d0fccd;
+    color: #1d1d1d;
+    margin-right: 4px;
+}
+
+.badge.bad {
+    background: #ffd6c2;
+    color: #c22b2b;
+}
+
+.win {
+    color: #1c8a3c;
+    font-weight: 700;
+}
+
+.lose {
+    color: #c22b2b;
+    font-weight: 700;
+}
