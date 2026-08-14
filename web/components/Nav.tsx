@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { DOCS_URL, VERIFY_URL } from "@/lib/links";
 
 const LINKS = [
-    ["Games", "#demo-dice"],
+    ["Games", "#demo-roulette"],
     ["How it works", "#how-it-works"],
     ["Integrate", "#code"],
     ["FAQ", "#faq"],
@@ -21,15 +21,14 @@ export default function Nav() {
     }, []);
 
     return (
-        <header
-            className={`sticky top-0 z-50 transition-colors ${
-                scrolled ? "border-b border-line bg-white/85 backdrop-blur" : "border-b border-transparent"
-            }`}
-        >
-            <div className="col flex h-16 items-center justify-between gap-6">
-                <a href="#hero" className="flex items-center gap-3">
-                    <img src="/text-logo.svg" alt="Foreseer" className="h-6 w-auto" />
-                    <span className="chip tech">[ SPEC v0.1 ]</span>
+        <header className="sticky top-0 z-50">
+            <div
+                className={`col flex h-16 items-center justify-between gap-6 border-b transition-colors ${
+                    scrolled ? "border-line bg-white/85 backdrop-blur" : "border-transparent"
+                }`}
+            >
+                <a href="#hero" className="flex items-center">
+                    <img src="/text-logo.svg" alt="Foreseer" className="h-8 w-auto" />
                 </a>
                 <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
                     {LINKS.map(([label, href]) => (
@@ -43,9 +42,9 @@ export default function Nav() {
                 </nav>
                 <a
                     href={VERIFY_URL}
-                    className="tech rounded-full bg-primary px-4 py-2.5 text-[11px] font-medium text-white transition-colors hover:bg-primary-hover"
+                    className="rounded-full bg-primary px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover"
                 >
-                    [ VERIFY A BET ]
+                    Verify a bet
                 </a>
             </div>
         </header>

@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import example from "@/data/example.json";
+import BorderGlow from "@/components/reactbits/BorderGlow";
 
 const trunc = (hex: string) => hex.slice(0, 10) + "…" + hex.slice(-8);
 
@@ -28,10 +29,10 @@ const LINES = (HEAD + DRAW + TAIL).split(/\r?\n/);
 const TOTAL = LINES.reduce((n, line) => n + line.length + 1, 0);
 
 const STATUS = [
-    "[ EPOCH 1 · OPEN ] · seedCommit published onchain",
-    "[ PLAY ] · dice over 5000 · rolled 3725 · lost",
-    `[ EPOCH 1 · CLOSED ] · serverSeed ${trunc(example.serverSeed)} revealed`,
-    `[ ANCHORED ] · merkleRoot ${trunc(example.merkleRoot)}`,
+    "EPOCH 1 OPEN · seedCommit published onchain",
+    "PLAY · dice over 5000 · rolled 3725 · lost",
+    `EPOCH 1 CLOSED · serverSeed ${trunc(example.serverSeed)} revealed`,
+    `ANCHORED · merkleRoot ${trunc(example.merkleRoot)}`,
 ];
 
 const CHECKS = ["signature", "commit", "outcome", "merkle"] as const;
@@ -83,7 +84,7 @@ export default function ReceiptWidget() {
     }, []);
 
     return (
-        <div className="card mx-auto mt-14 max-w-2xl text-left">
+        <BorderGlow className="mx-auto mt-14 max-w-2xl border-line text-left">
             <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-3">
                 <span className="flex gap-1.5" aria-hidden="true">
                     <i className="h-2 w-2 rounded-full border border-line" />
@@ -93,7 +94,7 @@ export default function ReceiptWidget() {
                 <span className="tech keepcase text-[11px] text-muted">
                     receipt · epoch {r.epochId} · bet {r.betId}
                 </span>
-                <span className="chip tech">[ .JSON ]</span>
+                <span className="chip tech">.JSON</span>
             </div>
             <div className="tech keepcase border-b border-line px-5 py-2.5 text-[11px] text-muted">
                 {STATUS[statusIdx]}
@@ -130,13 +131,13 @@ export default function ReceiptWidget() {
                 </ul>
                 <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
                     <span className={`chip tech transition-opacity duration-300 ${checksShown === 4 ? "opacity-100" : "opacity-0"}`}>
-                        [ 4 / 4 OFFLINE CHECKS PASS ]
+                        4 / 4 offline checks pass
                     </span>
                     <span className="text-[12px] text-muted">
                         Checks 2 and 4 are onchain reads against the attested TEE registry and the anchored commit.
                     </span>
                 </div>
             </div>
-        </div>
+        </BorderGlow>
     );
 }

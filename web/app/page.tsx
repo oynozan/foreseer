@@ -1,6 +1,5 @@
 import Band from "@/components/Band";
-import CodeShowcase from "@/components/CodeShowcase";
-import { CoinflipDemo, DiceDemo, RouletteDemo } from "@/components/Demos";
+import CodeSection from "@/components/CodeSection";
 import Faq from "@/components/Faq";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -13,22 +12,22 @@ export default function Home() {
             <Nav />
             <main>
                 <Hero />
-                <Band id="demo-dice" meta={["[ 02 / 07 ]", "GAMES // DICE · DRAW 0..9999 //"]}>
-                    <DiceDemo />
+                <Band id="demo-roulette" meta={["[ 02 / 06 ]", "GAMES // ROULETTE //"]}>
+                    <div className="h-80" data-demo="roulette" />
                 </Band>
-                <Band id="demo-coinflip" meta={["[ 03 / 07 ]", "GAMES // COINFLIP · ONE BIT //"]}>
-                    <CoinflipDemo />
+                <Band id="demo-games" meta={["[ 03 / 06 ]", "GAMES // COINFLIP + DICE //"]}>
+                    <div className="grid gap-4 pt-12 md:grid-cols-2">
+                        <div id="demo-coinflip" className="h-64" data-demo="coinflip" />
+                        <div id="demo-dice" className="h-64" data-demo="dice" />
+                    </div>
                 </Band>
-                <Band id="demo-roulette" meta={["[ 04 / 07 ]", "GAMES // ROULETTE · RULE GRAMMAR //"]}>
-                    <RouletteDemo />
+                <Band id="code" meta={["[ 04 / 06 ]", "INTEGRATE // THREE WAYS IN //"]}>
+                    <CodeSection />
                 </Band>
-                <Band id="code" meta={["[ 05 / 07 ]", "INTEGRATE // THREE WAYS IN //"]}>
-                    <CodeShowcase />
-                </Band>
-                <Band id="how-it-works" meta={["[ 06 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]}>
+                <Band id="how-it-works" meta={["[ 05 / 06 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]}>
                     <HowItWorks />
                 </Band>
-                <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]}>
+                <Band id="faq" meta={["[ 06 / 06 ]", "FAQ // STATED HONESTLY //"]}>
                     <Faq />
                 </Band>
             </main>

@@ -12,10 +12,3 @@ export const DOCS = {
     architecture: DOCS_BASE + "/architecture",
     security: DOCS_BASE + "/security",
 };
-
-export const EXPLORER = "https://coston2-explorer.flare.network/address/";
-
-export const CONTRACTS = {
-    instructionSender: "0x3fecD2c7B57DB6ac1EC2446bAe61cd9d740342b6",
-    operatorBond: "0xAe260f04eCe439aD21427381e0032ad9B2f11e69",
-};
