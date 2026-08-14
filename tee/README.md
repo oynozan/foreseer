@@ -46,7 +46,7 @@ Tested with Foundry against the golden vectors: the contract accepts the
 actual `closeSignature` from `spec/vectors/e2e.json` on chainId 114.
 
 ```sh
-forge test    # 12 tests; forge-std is vendored in lib/
+forge test    # 19 tests (12 sender, 7 bond); forge-std is vendored in lib/
 ```
 
 ## Test

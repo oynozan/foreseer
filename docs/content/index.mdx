@@ -1,3 +1,5 @@
+import { Callout } from "nextra/components";
+
 # What is Foreseer
 
 Foreseer is a provably fair engine for iGaming. It answers one question with
@@ -6,6 +8,14 @@ mathematics instead of trust: **how do I know the house did not cheat me?**
 Game outcomes are computed inside a Trusted Execution Environment (a TEE, on
 Flare Confidential Compute), committed to before you bet, and fully
 verifiable by you afterwards, in your own browser, with open source code.
+
+<Callout type="warning">
+    **Status: preview, and the enclave is not attached yet.** The protocol, the SDK, the contracts and the verifier are
+    real and running on Coston2 testnet, but no Confidential Space machine is registered, so today the reference server
+    generates and stores the epoch seed itself. That means the commitment is the operator's word rather than hardware
+    attested, and checks 2 and 4 (the onchain reads) are not live. Every other guarantee on this page holds now; this
+    one arrives when the enclave does. See [Security model](/security) for exactly what that changes.
+</Callout>
 
 ## The one minute version
 

@@ -146,11 +146,21 @@ nonce, read `/billing/me`.
 
 ## Errors
 
-Every error is `{"error": "message"}` with a conventional status: 400
-invalid input, 401 missing or wrong key, 404 unknown resource, 409 conflict
-(nonce mismatch, duplicate operator, no open epoch), 413 oversized body, 429
-rate limited, 500 `{"error":"internal error"}` with details only in server
-logs.
+Every error is `{"error": "message"}` with a conventional status:
+
+| Status | When |
+| --- | --- |
+| 400 | invalid input |
+| 401 | missing or wrong key, or no valid wallet session |
+| 402 | prepaid balance below the price of a play |
+| 403 | topup transaction was not sent by the operator's owner wallet |
+| 404 | unknown resource |
+| 409 | conflict: nonce mismatch, duplicate operator, no open epoch, transaction already credited |
+| 413 | oversized body |
+| 429 | rate limited |
+| 500 | `{"error":"internal error"}`, details only in server logs |
+| 502 | chain RPC unavailable or returned an error |
+| 503 | treasury not configured, so topups are disabled |
 
 ## Configuration
 

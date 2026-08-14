@@ -40,8 +40,21 @@ Helpers: `toHex(bytes): Hex`, `toBytes(hex | bytes): Uint8Array`, plus
 | `evalWin(rule, draws)` | evaluates the win expression against drawn values |
 | `resolveOutcome(rule, serverSeed, clientSeed, nonce)` | draws plus win plus payout in one call: `{ draws, win, payoutBp }` |
 
-Presets (exported from the root): `dice({ target, mode: "over" | "under" })`
-and `coinflip()`, both paying exact 99 percent RTP.
+Presets, all exported from the root and all paying the exact 99 percent RTP
+floor computed with integer math:
+
+| Preset | Outcome space | Bets |
+| --- | --- | --- |
+| `dice({ target, mode })` | 0..9999 | over or under a target |
+| `coinflip({ side })` | 0..1 | heads (default) or tails |
+| `roulette(bet)` | alias of `europeanRoulette` | |
+| `europeanRoulette(bet)` | 37 pockets, 0..36 | straight, red, black, even, odd, low, high, dozen, column |
+| `americanRoulette(bet)` | 38 pockets, 0..36 plus `00` | the same bets, one extra zero |
+| `towers({ picks, tiles })` | one draw per level | miss the bomb tile on every level |
+
+Helpers: `pocketColor`, `pocketLabel`, `RED_POCKETS`, `BLACK_POCKETS`,
+`EUROPEAN_WHEEL`, `AMERICAN_WHEEL`, `DOUBLE_ZERO`. See
+[Gamemodes](/gamemodes) for odds tables and integration guides.
 
 ## Receipts and signatures (`foreseer-sdk`)
 
