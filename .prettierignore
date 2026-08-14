@@ -6,3 +6,6 @@ packages/ts/
 
 # vendored scaffold and go code format themselves
 tee/
+
+# generated widget bundle, never reformat
+web/public/foreseer-widget.js

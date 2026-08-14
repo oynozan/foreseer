@@ -22,7 +22,7 @@ function walk(dir) {
 }
 
 // no em dashes in authored files
-const authored = ["app", "components", "data", "lib"]
+const authored = ["app", "components", "data", "lib", "scripts", "widget"]
     .filter((d) => existsSync(join(root, d)))
     .flatMap((d) => walk(join(root, d)))
     .concat([join(root, "smoke.mjs"), join(root, "next.config.ts")]);
