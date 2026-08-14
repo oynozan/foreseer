@@ -100,8 +100,16 @@ export default function VerifyPage() {
                             </button>
                         </div>
                     </div>
-                    <div id="results" className="pb-8 pt-6">
-                        <p className="text-[14px] text-muted">Paste a receipt or load the golden example.</p>
+                    <div className="pt-10 pb-8">
+                        <div className="flex items-baseline justify-between gap-4 border-b border-line pb-3">
+                            <h2 className="text-[15px] font-medium">Verification</h2>
+                            <span className="tech text-[11px] text-muted" aria-hidden="true">
+                                four run here, two read the chain //
+                            </span>
+                        </div>
+                        <div id="results">
+                            <p>Paste a receipt or load the golden example.</p>
+                        </div>
                     </div>
                 </Band>
             </main>

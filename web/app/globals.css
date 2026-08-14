@@ -204,70 +204,81 @@ body {
 
 /* verifier widget result rows, injected as raw html */
 .check {
-    padding: 12px 14px;
-    border: 1px solid var(--color-line);
-    border-radius: 10px;
-    margin: 10px 0;
-    background: #fff;
-    font-size: 14px;
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    padding: 11px 0;
+    font-size: 13.5px;
+    color: var(--color-ink);
+}
+
+.check + .check {
+    border-top: 1px solid var(--color-line);
 }
 
 .check small {
-    display: block;
+    margin-left: auto;
+    max-width: 45%;
+    padding-left: 16px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: 0.04em;
     color: var(--color-muted);
-    font-size: 13px;
 }
 
 .check .dot {
-    margin-right: 6px;
-}
-
-.check.green {
-    background: var(--color-mint);
-    border-color: var(--color-mint);
-    color: var(--color-mint-ink);
-}
-
-.check.green small {
-    color: var(--color-mint-ink);
+    font-size: 10px;
+    line-height: 1;
+    color: var(--color-muted);
 }
 
 .check.green .dot {
-    color: #16a34a;
-}
-
-.check.red {
-    background: #fee4e2;
-    border-color: #fee4e2;
-    color: #7a271a;
-}
-
-.check.red small {
-    color: #7a271a;
+    color: #15803d;
 }
 
 .check.red .dot {
     color: var(--color-red);
 }
 
-.check.chain {
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary-soft);
-    color: var(--color-ink);
-}
-
 .check.chain .dot {
     color: var(--color-primary);
 }
 
-.verdict {
-    font-weight: 600;
-    font-size: 17px;
-    margin: 16px 0 4px;
+/* on a phone the detail gets its own line instead of a stub */
+@media (max-width: 639px) {
+    .check {
+        flex-wrap: wrap;
+        padding: 12px 0;
+    }
+
+    .check small {
+        flex-basis: calc(100% - 20px);
+        margin-left: 20px;
+        max-width: none;
+        padding-left: 0;
+        overflow: visible;
+        overflow-wrap: anywhere;
+        white-space: normal;
+    }
 }
 
-.verdict.green {
-    color: #15803d;
+#results > p:not([class]) {
+    padding-top: 16px;
+    font-size: 13.5px;
+    color: var(--color-muted);
+}
+
+.verdict {
+    margin-top: 18px;
+    padding-top: 14px;
+    border-top: 1px solid var(--color-line);
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.7;
+    color: var(--color-ink);
 }
 
 .verdict.red {
