@@ -19,7 +19,7 @@
 
 /* lattice geometry */
 :root {
-    --col-max: 1160px;
+    --col-max: 1200px;
     --rail-inset: max(16px, calc(50% - var(--col-max) / 2));
     --tick-ink: rgba(29, 29, 29, 0.35);
 }
@@ -54,6 +54,12 @@ body::before {
     font-family: var(--font-tech);
     text-transform: uppercase;
     letter-spacing: 0.08em;
+}
+
+/* hex and camelCase must keep their case */
+.keepcase {
+    text-transform: none;
+    letter-spacing: 0.04em;
 }
 
 /* blueprint lattice: rails, rules, ticks */
@@ -120,6 +126,36 @@ body::before {
     font-size: 11px;
     line-height: 1;
     color: var(--color-muted);
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 1px solid var(--color-line);
+    border-radius: var(--radius-chip);
+    padding: 4px 8px;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--color-muted);
+    background: #fff;
+}
+
+.pulse {
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: #16a34a;
+    animation: pulse 2.2s ease-out infinite;
+}
+
+@keyframes pulse {
+    from {
+        box-shadow: 0 0 0 0 rgba(22, 163, 74, 0.35);
+    }
+    to {
+        box-shadow: 0 0 0 8px rgba(22, 163, 74, 0);
+    }
 }
 
 @media (max-width: 767px) {

@@ -54,6 +54,25 @@ if (existsSync(htmlPath)) {
     const missing = REQUIRED_IDS.filter((id) => !page.includes(`id="${id}"`));
     if (missing.length) fail("missing section ids: " + missing.join(", "));
     else ok("all " + REQUIRED_IDS.length + " required ids present");
+
+    // hrefs resolve to ids, public files, or declared doc paths
+    const linksSrc = readFileSync(join(root, "lib", "links.ts"), "utf8");
+    const declared = [...linksSrc.matchAll(/"(\/[^"]*)"/g)].map((m) => m[1]);
+    let broken = 0;
+    for (const [, url] of page.matchAll(/(?:href|src)="([^"]+)"/g)) {
+        if (/^(https?:|mailto:|data:)/.test(url)) continue;
+        if (url.startsWith("#")) {
+            if (!page.includes(`id="${url.slice(1)}"`)) fail("dangling anchor " + url) || broken++;
+        } else if (url.startsWith("/") && !url.startsWith("/_next/")) {
+            const clean = url.split("?")[0];
+            if (clean === "/" || clean === "/icon.png") continue;
+            if (existsSync(join(root, "public", clean))) continue;
+            if (declared.includes(clean)) continue;
+            fail("unresolved local url " + url);
+            broken++;
+        }
+    }
+    if (!broken) ok("all local hrefs resolve");
 } else {
     fail("no prerendered index.html, run pnpm build first");
 }

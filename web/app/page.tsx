@@ -1,8 +1,11 @@
 import Band from "@/components/Band";
+import Footer from "@/components/Footer";
+import Nav from "@/components/Nav";
 
 export default function Home() {
     return (
         <div className="frame">
+            <Nav />
             <main>
                 <Band id="hero" meta={["[ 01 / 07 ]", "PROTOCOL // COMMIT BEFORE BET //"]}>
                     <h1 className="pt-16">
@@ -16,6 +19,7 @@ export default function Home() {
                 <Band id="how-it-works" meta={["[ 06 / 07 ]", "PROTOCOL // COMMIT · PLAY · REVEAL · ANCHOR //"]} />
                 <Band id="faq" meta={["[ 07 / 07 ]", "FAQ // STATED HONESTLY //"]} />
             </main>
+            <Footer />
         </div>
     );
 }
