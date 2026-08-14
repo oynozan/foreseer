@@ -17,6 +17,9 @@ export const metadata = {
         template: "%s | Foreseer",
     },
     description: "Provably fair engine for iGaming on Flare Confidential Compute",
+    icons: {
+        icon: "/favicon.png",
+    },
 };
 
 export default async function RootLayout({ children }) {
@@ -32,11 +35,18 @@ export default async function RootLayout({ children }) {
             </Head>
             <body>
                 <Layout
-                    navbar={<Navbar logo={<b style={{ color: "#ff6200" }}>Foreseer</b>} />}
+                    navbar={<Navbar logo={<img src="/text-logo.svg" alt="Foreseer" style={{ height: 30 }} />} />}
                     pageMap={await getPageMap()}
                     darkMode={false}
                     nextThemes={{ defaultTheme: "light", forcedTheme: "light" }}
-                    footer={<Footer>Foreseer, FORESEER-SPEC v0.1. MIT licensed.</Footer>}
+                    footer={
+                        <Footer>
+                            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                                <img src="/logo.svg" alt="Foreseer" style={{ height: 30, width: 30 }} />
+                                <span>Foreseer, FORESEER-SPEC v0.1. MIT licensed.</span>
+                            </div>
+                        </Footer>
+                    }
                 >
                     {children}
                 </Layout>
