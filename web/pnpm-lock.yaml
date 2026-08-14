@@ -24,8 +24,8 @@ importers:
         specifier: ^2.22.0
         version: 2.22.0(@solana/kit@5.5.1(bufferutil@4.1.0)(typescript@6.0.3)(utf-8-validate@5.0.10))(@solana/sysvars@5.5.1(typescript@6.0.3))
       foreseer-sdk:
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.2.0
+        version: 0.2.0
       gsap:
         specifier: ^3.15.0
         version: 3.15.0
@@ -2358,8 +2358,8 @@ packages:
     resolution: {integrity: sha512-dKx12eRCVIzqCxFGplyFKJMPvLEWgmNtUrpTiJIR5u97zEhRG8ySrtboPHZXx7daLxQVrl643cTzbab2tkQjxg==}
     engines: {node: '>= 0.4'}
 
-  foreseer-sdk@0.1.0:
-    resolution: {integrity: sha512-9N/GYVQ4XEPHQdhdJ2woXqnCYGDAYl7PANzpvDhgKgNkM/XMsypV94Z49dX54/CXg3nsJM5k+pkDryMyReGZXA==}
+  foreseer-sdk@0.2.0:
+    resolution: {integrity: sha512-n8zVmdLC8IS615dNbKxK6a4Cs4ydTKEVNGbJ585iXwGy7st2HT8THxG3ocv13IMxFaR9pYXp7kZVooOKc8VmCQ==}
     engines: {node: '>=20'}
 
   form-data@4.0.6:
@@ -7423,7 +7423,7 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
-  foreseer-sdk@0.1.0:
+  foreseer-sdk@0.2.0:
     dependencies:
       '@noble/curves': 2.3.0
       '@noble/hashes': 2.3.0
