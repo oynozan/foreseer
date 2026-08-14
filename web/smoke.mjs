@@ -62,7 +62,10 @@ if (existsSync(htmlPath)) {
     for (const [, url] of page.matchAll(/(?:href|src)="([^"]+)"/g)) {
         if (/^(https?:|mailto:|data:)/.test(url)) continue;
         if (url.startsWith("#")) {
-            if (!page.includes(`id="${url.slice(1)}"`)) fail("dangling anchor " + url) || broken++;
+            if (!page.includes(`id="${url.slice(1)}"`)) {
+                fail("dangling anchor " + url);
+                broken++;
+            }
         } else if (url.startsWith("/") && !url.startsWith("/_next/")) {
             const clean = url.split("?")[0];
             if (clean === "/" || clean === "/icon.png") continue;
