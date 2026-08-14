@@ -1,4 +1,5 @@
 import { readFileSync, readdirSync, statSync, existsSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -99,6 +100,16 @@ if (existsSync(htmlPath)) {
     if (!broken) ok("all local hrefs resolve");
 } else {
     fail("no prerendered index.html, run pnpm build first");
+}
+
+// roulette core, rule hash and landing math, needs the tsx runner
+const tsx = join(root, "..", "packages", "ts", "node_modules", ".bin", "tsx");
+if (existsSync(tsx) || existsSync(tsx + ".CMD")) {
+    const run = spawnSync(tsx, [join(root, "scripts", "roulette-test.mjs")], { shell: true, encoding: "utf8" });
+    if (run.status === 0) ok("roulette core test green");
+    else fail("roulette core test failed:\n" + (run.stdout ?? "") + (run.stderr ?? ""));
+} else {
+    fail("tsx runner missing, cannot run the roulette core test");
 }
 
 // verify page and widget bundle exist

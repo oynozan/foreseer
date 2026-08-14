@@ -194,14 +194,9 @@ export default function Dashboard() {
         <div className="frame min-h-screen">
             <Nav action={<WalletButton />} />
             <main className="col pb-24">
-                <div className="meta tech" aria-hidden="true">
-                    <span>[ DASHBOARD ]</span>
-                    <span>OPERATOR // FLARE COSTON2 //</span>
-                </div>
-
                 {phase === "loaded" && me ? (
                     <>
-                        <div className="flex flex-wrap items-end justify-between gap-4 pt-10">
+                        <div className="flex flex-wrap items-end justify-between gap-4 pt-4">
                             <div>
                                 <p className="tech text-[11px] text-muted">Signed in as</p>
                                 <h1 className="mt-2 text-2xl font-medium tracking-[-0.01em]" style={mono}>
