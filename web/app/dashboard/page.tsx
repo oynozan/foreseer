@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { useCallback, useState } from "react";
+import { useAccount, useSignMessage } from "wagmi";
 import Nav from "@/components/Nav";
 
 const API = process.env.NEXT_PUBLIC_FORESEER_API ?? "http://localhost:8787";
@@ -42,7 +44,7 @@ interface MeResponse {
     operators: OperatorData[];
 }
 
-type Phase = "idle" | "connecting" | "loaded" | "untied" | "error";
+type Phase = "idle" | "signing" | "loaded" | "untied" | "error";
 
 const ONE_FLR = BigInt("1000000000000000000");
 const TENTH_MILLI = BigInt("100000000000000");
@@ -64,72 +66,106 @@ async function getJson(path: string, headers: Record<string, string> = {}) {
     return { status: res.status, json: await res.json() };
 }
 
-export default function Dashboard() {
-    const [phase, setPhase] = useState<Phase>("idle");
-    const [error, setError] = useState("");
-    const [me, setMe] = useState<MeResponse | null>(null);
+const PILL = "rounded-full px-5 py-2.5 text-[13px] font-medium transition-colors";
+const PRIMARY = `${PILL} bg-primary text-white hover:bg-primary-hover disabled:opacity-50`;
+const SECONDARY = `${PILL} border border-line bg-white text-ink hover:border-ink`;
 
-    async function connect() {
-        const eth = (window as { ethereum?: { request(args: unknown): Promise<unknown> } }).ethereum;
-        if (!eth) {
-            setError("No wallet extension found. Install MetaMask or a compatible wallet.");
-            setPhase("error");
-            return;
-        }
-        setPhase("connecting");
-        setError("");
+function WalletButton() {
+    return (
+        <ConnectButton.Custom>
+            {({ account, chain, openAccountModal, openChainModal, openConnectModal, mounted }) => {
+                if (!mounted) return <span className="h-10 w-32" aria-hidden="true" />;
+                if (!account || !chain) {
+                    return (
+                        <button onClick={openConnectModal} className={PRIMARY}>
+                            Connect wallet
+                        </button>
+                    );
+                }
+                if (chain.unsupported) {
+                    return (
+                        <button onClick={openChainModal} className={PRIMARY}>
+                            Wrong network
+                        </button>
+                    );
+                }
+                return (
+                    <span className="flex items-center gap-2">
+                        <button onClick={openChainModal} className={`${SECONDARY} hidden sm:block`}>
+                            {chain.name}
+                        </button>
+                        <button onClick={openAccountModal} className={PRIMARY}>
+                            {account.displayName}
+                        </button>
+                    </span>
+                );
+            }}
+        </ConnectButton.Custom>
+    );
+}
+
+type Session = { addr?: string; phase: Phase; error: string; me: MeResponse | null };
+
+const EMPTY: Session = { phase: "idle", error: "", me: null };
+
+export default function Dashboard() {
+    const { address, isConnected } = useAccount();
+    const { signMessageAsync } = useSignMessage();
+    const [session, setSession] = useState<Session>(EMPTY);
+
+    // a session belongs to one wallet, switching clears it
+    const { phase, error, me } = session.addr === address ? session : EMPTY;
+
+    const signIn = useCallback(async () => {
+        if (!address) return;
+        const wallet = address.toLowerCase();
+        setSession({ ...EMPTY, addr: address, phase: "signing" });
         try {
-            const accounts = (await eth.request({ method: "eth_requestAccounts" })) as string[];
-            const wallet = accounts[0].toLowerCase();
             const nonce = await getJson(`/auth/nonce?wallet=${wallet}`);
             if (nonce.status !== 200) throw new Error(nonce.json.error);
-            const signature = (await eth.request({
-                method: "personal_sign",
-                params: [nonce.json.message, accounts[0]],
-            })) as string;
+            const signature = await signMessageAsync({ message: nonce.json.message });
             const login = await fetch(`${API}/auth/login`, {
                 method: "POST",
                 headers: { "content-type": "application/json" },
                 body: JSON.stringify({ wallet, signature }),
             });
-            const session = await login.json();
-            if (!login.ok) throw new Error(session.error);
-            const data = await getJson("/billing/me", { "x-owner-token": session.token });
+            const auth = await login.json();
+            if (!login.ok) throw new Error(auth.error);
+            const data = await getJson("/billing/me", { "x-owner-token": auth.token });
             if (data.status === 404) {
-                setPhase("untied");
+                setSession({ ...EMPTY, addr: address, phase: "untied" });
                 return;
             }
             if (data.status !== 200) throw new Error(data.json.error);
-            setMe(data.json as MeResponse);
-            setPhase("loaded");
+            setSession({ addr: address, phase: "loaded", error: "", me: data.json as MeResponse });
         } catch (err) {
-            setError(err instanceof Error ? err.message : "connection failed");
-            setPhase("error");
+            setSession({
+                ...EMPTY,
+                addr: address,
+                phase: "error",
+                error: err instanceof Error ? err.message : "sign in failed",
+            });
         }
-    }
+    }, [address, signMessageAsync]);
 
     return (
         <div className="frame min-h-screen">
-            <Nav
-                action={
-                    <button
-                        onClick={connect}
-                        disabled={phase === "connecting"}
-                        className="rounded-full bg-primary px-5 py-2.5 text-[13px] font-medium text-white transition-colors hover:bg-primary-hover disabled:opacity-50"
-                    >
-                        {phase === "connecting" ? "Waiting for wallet..." : "Connect wallet"}
-                    </button>
-                }
-            />
+            <Nav action={<WalletButton />} />
             <main className="col pb-24 pt-12">
                 {phase !== "loaded" && (
                     <>
                         <div className="mx-auto max-w-xl text-center">
                             <h1 className="text-4xl font-bold">Your Foreseer service</h1>
                             <p className="mt-4 text-muted">
-                                Connect the wallet that pays for your epochs. If a Foreseer service is tied to it, every
-                                deposit, play, and balance shows up here.
+                                {isConnected
+                                    ? "Sign a message to prove you own this wallet. Nothing is sent onchain and there is no fee."
+                                    : "Connect the wallet that pays for your epochs. If a Foreseer service is tied to it, every deposit, play, and balance shows up here."}
                             </p>
+                            {isConnected && (
+                                <button onClick={signIn} disabled={phase === "signing"} className={`${PRIMARY} mt-8`}>
+                                    {phase === "signing" ? "Check your wallet..." : "Sign in with wallet"}
+                                </button>
+                            )}
                             {phase === "untied" && (
                                 <p className="mt-6 rounded-card border border-line bg-primary-soft p-4 text-sm">
                                     This wallet is not tied to any Foreseer service. Operators get tied at signup: the
