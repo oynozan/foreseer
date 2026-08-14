@@ -83,30 +83,44 @@ describe("billing report", () => {
             {
                 operatorId: 1,
                 name: "op-a",
+                ownerWallet: null,
                 plays: 2,
                 wins: wins(playsA),
                 payoutBpSum: sum(playsA),
                 amountDueWei: "2000000000000000000",
+                depositedWei: "0",
+                balanceWei: "-2000000000000000000",
             },
             {
                 operatorId: 2,
                 name: "op-b",
+                ownerWallet: null,
                 plays: 1,
                 wins: wins(playsB),
                 payoutBpSum: sum(playsB),
                 amountDueWei: "1000000000000000000",
+                depositedWei: "0",
+                balanceWei: "-1000000000000000000",
             },
         ]);
+        expect(res.json.totals).toEqual({
+            plays: 3,
+            amountDueWei: "3000000000000000000",
+            depositedWei: "0",
+        });
     });
 
-    it("filters by range and omits operators with zero plays", async () => {
+    it("filters plays by range but keeps every operator listed", async () => {
         const res = await call("GET", "/admin/billing?from=1500&to=4000", undefined, { "x-admin-key": ADMIN });
         expect(res.status).toBe(200);
         expect(res.json.from).toBe(1500);
         expect(res.json.to).toBe(4000);
-        expect(res.json.operators.length).toBe(1);
+        expect(res.json.operators.length).toBe(2);
         expect(res.json.operators[0].operatorId).toBe(1);
         expect(res.json.operators[0].plays).toBe(1);
         expect(res.json.operators[0].amountDueWei).toBe("1000000000000000000");
+        expect(res.json.operators[1].plays).toBe(0);
+        expect(res.json.operators[1].amountDueWei).toBe("0");
+        expect(res.json.totals.plays).toBe(1);
     });
 });

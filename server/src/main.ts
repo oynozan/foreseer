@@ -4,6 +4,7 @@ import { dirname } from "node:path";
 import { openDb } from "./db";
 import { Engine } from "./engine";
 import { createApp } from "./app.module";
+import { rpcChain } from "./wallet";
 import type { Hex } from "foreseer-sdk";
 
 async function bootstrap(): Promise<void> {
@@ -15,12 +16,20 @@ async function bootstrap(): Promise<void> {
     const playLimit = Number(process.env.FORESEER_PLAY_LIMIT ?? 60);
     const playWindowSeconds = Number(process.env.FORESEER_PLAY_WINDOW_SECONDS ?? 10);
     const pricePerPlayWei = process.env.FORESEER_PRICE_PER_PLAY_WEI ?? "0";
+    const chainRpc = process.env.FORESEER_CHAIN_RPC ?? "https://coston2-api.flare.network/ext/C/rpc";
+    const treasury = process.env.FORESEER_TREASURY;
 
     if (adminKey === "dev-admin-key") {
         console.warn("WARNING: using the default admin key, set FORESEER_ADMIN_KEY");
     }
     if (privateKey === undefined) {
         console.warn("WARNING: using the public reference test key, set FORESEER_TEE_KEY");
+    }
+    if (treasury === undefined) {
+        console.warn("WARNING: FORESEER_TREASURY unset, wallet topups disabled");
+    }
+    if (treasury !== undefined && BigInt(pricePerPlayWei) === 0n) {
+        console.warn("WARNING: treasury set but FORESEER_PRICE_PER_PLAY_WEI is 0, plays are free");
     }
 
     mkdirSync(dirname(dbPath), { recursive: true });
@@ -34,7 +43,15 @@ async function bootstrap(): Promise<void> {
         if (t.closed !== null) console.log(`epoch ${t.closed} closed, epoch ${t.open} open`);
     }, 5000);
 
-    const app = await createApp({ db, engine, adminKey, playLimit, playWindowSeconds, pricePerPlayWei });
+    const app = await createApp({
+        db,
+        engine,
+        adminKey,
+        playLimit,
+        playWindowSeconds,
+        pricePerPlayWei,
+        ...(treasury === undefined ? {} : { chain: rpcChain(chainRpc, treasury) }),
+    });
     await app.listen(port);
     console.log(`foreseer-server on http://localhost:${port} teeId=${engine.teeId} epoch=${epochSeconds}s`);
 

@@ -14,12 +14,51 @@ import { verifyOutcome } from "foreseer-sdk/verify";
 import type { Hex, Receipt, Rule } from "foreseer-sdk";
 import { ApiError, rowToReceipt } from "./engine";
 import type { Engine } from "./engine";
-import type { EpochRow, OperatorRow, RuleRow } from "./db";
+import type { DepositRow, EpochRow, OperatorRow, RuleRow } from "./db";
 import { AdminGuard, OperatorGuard, PlayRateGuard } from "./guards";
 import type { ApiRequest } from "./guards";
-import { DB, ENGINE, PRICE_PER_PLAY_WEI } from "./tokens";
+import { parseWallet } from "./wallet";
+import type { ChainGateway, WalletSessions } from "./wallet";
+import { CHAIN, DB, ENGINE, PRICE_PER_PLAY_WEI, SESSIONS } from "./tokens";
 
 const HASH = /^0x[0-9a-f]{64}$/;
+
+interface Funds {
+    plays: number;
+    depositedWei: bigint;
+    spentWei: bigint;
+    balanceWei: bigint;
+}
+
+// Plays are charged at their recorded price, never re-priced
+function playCharges(db: Database.Database, operatorId: number, from?: number, to?: number): { plays: number; wei: bigint } {
+    const ranged = from !== undefined;
+    const rows = db
+        .prepare(
+            `SELECT price_wei AS p, COUNT(*) AS c FROM receipts WHERE operator_id = ?${
+                ranged ? " AND timestamp BETWEEN ? AND ?" : ""
+            } GROUP BY price_wei`,
+        )
+        .all(...(ranged ? [operatorId, from, to] : [operatorId])) as { p: string; c: number }[];
+    return rows.reduce(
+        (acc, row) => ({ plays: acc.plays + row.c, wei: acc.wei + BigInt(row.p) * BigInt(row.c) }),
+        { plays: 0, wei: 0n },
+    );
+}
+
+function operatorFunds(db: Database.Database, operatorId: number): Funds {
+    const charges = playCharges(db, operatorId);
+    const rows = db.prepare("SELECT amount_wei FROM deposits WHERE operator_id = ?").all(operatorId) as {
+        amount_wei: string;
+    }[];
+    const depositedWei = rows.reduce((acc, row) => acc + BigInt(row.amount_wei), 0n);
+    return {
+        plays: charges.plays,
+        depositedWei,
+        spentWei: charges.wei,
+        balanceWei: depositedWei - charges.wei,
+    };
+}
 
 function intParam(value: string): number {
     if (!/^\d+$/.test(value)) throw new ApiError(404, "no such route");
@@ -75,11 +114,19 @@ function loadRule(db: Database.Database, hash: string): Rule {
 
 @Controller()
 export class HealthController {
-    constructor(@Inject(ENGINE) private readonly engine: Engine) {}
+    constructor(
+        @Inject(ENGINE) private readonly engine: Engine,
+        @Inject(CHAIN) private readonly chain: ChainGateway | null,
+    ) {}
 
     @Get("health")
     health() {
-        return { ok: true, teeId: this.engine.teeId, chainId: Number(this.engine.domain.chainId) };
+        return {
+            ok: true,
+            teeId: this.engine.teeId,
+            chainId: Number(this.engine.domain.chainId),
+            treasury: this.chain === null ? null : this.chain.treasury,
+        };
     }
 }
 
@@ -115,6 +162,7 @@ export class MetricsController {
 interface BillingRow {
     operatorId: number;
     name: string;
+    ownerWallet: string | null;
     plays: number;
     wins: number;
     payoutBpSum: number;
@@ -131,21 +179,23 @@ export class AdminController {
 
     @Post("operators")
     createOperator(@Body() body: unknown) {
-        const name = (body as { name?: unknown })?.name;
+        const b = body as { name?: unknown; ownerWallet?: unknown };
+        const name = b?.name;
         if (typeof name !== "string" || name.length < 1 || name.length > 64) {
             throw new ApiError(400, "name must be a 1..64 char string");
         }
+        const wallet = b?.ownerWallet === undefined ? null : parseWallet(b.ownerWallet);
         const apiKey = `fsk_${randomBytes(24).toString("hex")}`;
         const keyHash = createHash("sha256").update(apiKey, "utf8").digest("hex");
         try {
             this.db
-                .prepare("INSERT INTO operators (name, api_key_hash, created_at) VALUES (?, ?, ?)")
-                .run(name, keyHash, Math.floor(Date.now() / 1000));
+                .prepare("INSERT INTO operators (name, api_key_hash, created_at, owner_wallet) VALUES (?, ?, ?, ?)")
+                .run(name, keyHash, Math.floor(Date.now() / 1000), wallet);
         } catch {
             throw new ApiError(409, "operator name already exists");
         }
         const row = this.db.prepare("SELECT * FROM operators WHERE name = ?").get(name) as unknown as OperatorRow;
-        return { id: row.id, name: row.name, apiKey };
+        return { id: row.id, name: row.name, ownerWallet: row.owner_wallet, apiKey };
     }
 
     @Post("close")
@@ -162,15 +212,37 @@ export class AdminController {
         const to = intQuery(toRaw, this.engine.nowSeconds(), 0, Number.MAX_SAFE_INTEGER, "to must be >= 0");
         const rows = this.db
             .prepare(
-                "SELECT r.operator_id AS operatorId, o.name AS name, COUNT(*) AS plays, SUM(r.win) AS wins, SUM(r.payout_bp) AS payoutBpSum FROM receipts r JOIN operators o ON o.id = r.operator_id WHERE r.timestamp BETWEEN ? AND ? GROUP BY r.operator_id, o.name ORDER BY r.operator_id",
+                "SELECT o.id AS operatorId, o.name AS name, o.owner_wallet AS ownerWallet, COUNT(r.epoch_id) AS plays, COALESCE(SUM(r.win), 0) AS wins, COALESCE(SUM(r.payout_bp), 0) AS payoutBpSum FROM operators o LEFT JOIN receipts r ON r.operator_id = o.id AND r.timestamp BETWEEN ? AND ? GROUP BY o.id, o.name, o.owner_wallet ORDER BY o.id",
             )
             .all(from, to) as unknown as BillingRow[];
-        const price = BigInt(this.pricePerPlayWei);
+        const operators = rows.map((row) => {
+            const funds = operatorFunds(this.db, row.operatorId);
+            const ranged = playCharges(this.db, row.operatorId, from, to);
+            return {
+                ...row,
+                amountDueWei: ranged.wei.toString(),
+                depositedWei: funds.depositedWei.toString(),
+                balanceWei: funds.balanceWei.toString(),
+            };
+        });
+        const totals = operators.reduce(
+            (acc, row) => ({
+                plays: acc.plays + row.plays,
+                amountDueWei: acc.amountDueWei + BigInt(row.amountDueWei),
+                depositedWei: acc.depositedWei + BigInt(row.depositedWei),
+            }),
+            { plays: 0, amountDueWei: 0n, depositedWei: 0n },
+        );
         return {
             from,
             to,
             pricePerPlayWei: this.pricePerPlayWei,
-            operators: rows.map((row) => ({ ...row, amountDueWei: (BigInt(row.plays) * price).toString() })),
+            operators,
+            totals: {
+                plays: totals.plays,
+                amountDueWei: totals.amountDueWei.toString(),
+                depositedWei: totals.depositedWei.toString(),
+            },
         };
     }
 }
@@ -205,6 +277,7 @@ export class PlayController {
     constructor(
         @Inject(DB) private readonly db: Database.Database,
         @Inject(ENGINE) private readonly engine: Engine,
+        @Inject(PRICE_PER_PLAY_WEI) private readonly pricePerPlayWei: string,
     ) {}
 
     @Post()
@@ -214,12 +287,21 @@ export class PlayController {
         if (typeof b?.clientSeed !== "string") throw new ApiError(400, "clientSeed required");
         if (typeof b?.ruleHash !== "string") throw new ApiError(400, "ruleHash required");
         if (b.nonce !== undefined && !Number.isSafeInteger(b.nonce)) throw new ApiError(400, "bad nonce");
+        const price = BigInt(this.pricePerPlayWei);
+        // Wallet-tied operators are prepaid, key-only operators are invoiced
+        if (req.operator!.owner_wallet !== null && price > 0n) {
+            const funds = operatorFunds(this.db, req.operator!.id);
+            if (funds.balanceWei < price) {
+                throw new ApiError(402, "insufficient balance, top up via POST /billing/topup");
+            }
+        }
         const rule = loadRule(this.db, b.ruleHash);
         const played = this.engine.play({
             operatorId: req.operator!.id,
             clientSeed: b.clientSeed,
             rule,
             nonce: b.nonce as number | undefined,
+            priceWei: this.pricePerPlayWei,
         });
         return {
             epochId: played.epochId,
@@ -316,5 +398,144 @@ export class VerifyController {
             merkle: verifyMerkleProof(digest, proof.proof.map(toBytes), toBytes(proof.merkleRoot)),
         };
         return { epochId, betId, closed: true, checks, allGreen: Object.values(checks).every(Boolean) };
+    }
+}
+
+@Controller("auth")
+export class AuthController {
+    constructor(@Inject(SESSIONS) private readonly sessions: WalletSessions) {}
+
+    @Get("nonce")
+    nonce(@Query("wallet") walletRaw?: unknown) {
+        const wallet = parseWallet(walletRaw);
+        return { wallet, ...this.sessions.issueNonce(wallet) };
+    }
+
+    @Post("login")
+    @HttpCode(200)
+    login(@Body() body: unknown) {
+        const b = body as { wallet?: unknown; signature?: unknown };
+        const wallet = parseWallet(b?.wallet);
+        if (typeof b?.signature !== "string") throw new ApiError(400, "signature required");
+        return { wallet, ...this.sessions.login(wallet, b.signature) };
+    }
+}
+
+@Controller("billing")
+export class BillingController {
+    constructor(
+        @Inject(DB) private readonly db: Database.Database,
+        @Inject(CHAIN) private readonly chain: ChainGateway | null,
+        @Inject(SESSIONS) private readonly sessions: WalletSessions,
+        @Inject(PRICE_PER_PLAY_WEI) private readonly pricePerPlayWei: string,
+    ) {}
+
+    private funds(operatorId: number): Funds {
+        return operatorFunds(this.db, operatorId);
+    }
+
+    @Post("topup")
+    @HttpCode(200)
+    @UseGuards(OperatorGuard)
+    async topup(@Req() req: ApiRequest, @Body() body: unknown) {
+        const operator = req.operator!;
+        if (operator.owner_wallet === null) throw new ApiError(400, "operator has no owner wallet");
+        if (this.chain === null) throw new ApiError(503, "treasury not configured");
+        const txHash = (body as { txHash?: unknown })?.txHash;
+        if (typeof txHash !== "string" || !HASH.test(txHash)) throw new ApiError(400, "txHash must be a 0x hash");
+        const tx = await this.chain.fetchTx(txHash);
+        if (tx === null) throw new ApiError(404, "transaction not found");
+        if (!tx.confirmed) throw new ApiError(409, "transaction not confirmed yet");
+        if (!tx.success) throw new ApiError(400, "transaction failed onchain");
+        if (tx.to !== this.chain.treasury) throw new ApiError(400, "transaction does not pay the treasury");
+        if (tx.from !== operator.owner_wallet) throw new ApiError(403, "transaction not sent by the owner wallet");
+        if (tx.valueWei <= 0n) throw new ApiError(400, "transaction transfers no value");
+        try {
+            this.db
+                .prepare(
+                    "INSERT INTO deposits (tx_hash, operator_id, from_wallet, amount_wei, created_at) VALUES (?, ?, ?, ?, ?)",
+                )
+                .run(txHash, operator.id, tx.from, tx.valueWei.toString(), Math.floor(Date.now() / 1000));
+        } catch {
+            throw new ApiError(409, "transaction already credited");
+        }
+        const funds = this.funds(operator.id);
+        return {
+            creditedWei: tx.valueWei.toString(),
+            depositedWei: funds.depositedWei.toString(),
+            spentWei: funds.spentWei.toString(),
+            balanceWei: funds.balanceWei.toString(),
+        };
+    }
+
+    @Get("balance")
+    @UseGuards(OperatorGuard)
+    balance(@Req() req: ApiRequest) {
+        const funds = this.funds(req.operator!.id);
+        return {
+            pricePerPlayWei: this.pricePerPlayWei,
+            plays: funds.plays,
+            depositedWei: funds.depositedWei.toString(),
+            spentWei: funds.spentWei.toString(),
+            balanceWei: funds.balanceWei.toString(),
+        };
+    }
+
+    @Get("me")
+    me(@Req() req: ApiRequest) {
+        const token = req.headers["x-owner-token"];
+        const wallet = typeof token === "string" ? this.sessions.walletFor(token) : null;
+        if (wallet === null) throw new ApiError(401, "wallet login required");
+        const rows = this.db
+            .prepare("SELECT * FROM operators WHERE owner_wallet = ? ORDER BY id")
+            .all(wallet) as unknown as OperatorRow[];
+        if (rows.length === 0) throw new ApiError(404, "no Foreseer service tied to this wallet");
+        const operators = rows.map((operator) => {
+            const stats = this.db
+                .prepare(
+                    "SELECT COUNT(*) AS plays, COALESCE(SUM(win), 0) AS wins, COALESCE(SUM(payout_bp), 0) AS payoutBpSum, COUNT(DISTINCT epoch_id) AS epochsUsed FROM receipts WHERE operator_id = ?",
+                )
+                .get(operator.id) as { plays: number; wins: number; payoutBpSum: number; epochsUsed: number };
+            const deposits = this.db
+                .prepare("SELECT * FROM deposits WHERE operator_id = ? ORDER BY created_at DESC")
+                .all(operator.id) as unknown as DepositRow[];
+            const recent = this.db
+                .prepare(
+                    "SELECT epoch_id, bet_id, client_seed, win, payout_bp, timestamp FROM receipts WHERE operator_id = ? ORDER BY timestamp DESC, epoch_id DESC, bet_id DESC LIMIT 20",
+                )
+                .all(operator.id) as {
+                epoch_id: number;
+                bet_id: number;
+                client_seed: string;
+                win: number;
+                payout_bp: number;
+                timestamp: number;
+            }[];
+            const funds = this.funds(operator.id);
+            return {
+                operatorId: operator.id,
+                name: operator.name,
+                createdAt: operator.created_at,
+                ...stats,
+                depositedWei: funds.depositedWei.toString(),
+                spentWei: funds.spentWei.toString(),
+                balanceWei: funds.balanceWei.toString(),
+                deposits: deposits.map((d) => ({
+                    txHash: d.tx_hash,
+                    fromWallet: d.from_wallet,
+                    amountWei: d.amount_wei,
+                    createdAt: d.created_at,
+                })),
+                recent: recent.map((r) => ({
+                    epochId: r.epoch_id,
+                    betId: r.bet_id,
+                    clientSeed: r.client_seed,
+                    win: r.win === 1,
+                    payoutBp: r.payout_bp,
+                    timestamp: r.timestamp,
+                })),
+            };
+        });
+        return { wallet, pricePerPlayWei: this.pricePerPlayWei, operators };
     }
 }

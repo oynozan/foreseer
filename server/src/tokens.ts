@@ -3,3 +3,5 @@ export const ENGINE = "FORESEER_ENGINE";
 export const ADMIN_KEY = "FORESEER_ADMIN_KEY";
 export const PLAY_RATE = "FORESEER_PLAY_RATE";
 export const PRICE_PER_PLAY_WEI = "FORESEER_PRICE_PER_PLAY_WEI";
+export const CHAIN = "FORESEER_CHAIN";
+export const SESSIONS = "FORESEER_SESSIONS";

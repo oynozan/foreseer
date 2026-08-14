@@ -23,6 +23,13 @@ CREATE TABLE IF NOT EXISTS epochs (
     receipt_count INTEGER,
     close_signature TEXT
 );
+CREATE TABLE IF NOT EXISTS deposits (
+    tx_hash TEXT PRIMARY KEY,
+    operator_id INTEGER NOT NULL REFERENCES operators(id),
+    from_wallet TEXT NOT NULL,
+    amount_wei TEXT NOT NULL,
+    created_at INTEGER NOT NULL
+);
 CREATE TABLE IF NOT EXISTS receipts (
     epoch_id INTEGER NOT NULL,
     bet_id INTEGER NOT NULL,
@@ -35,6 +42,7 @@ CREATE TABLE IF NOT EXISTS receipts (
     payout_bp INTEGER NOT NULL,
     timestamp INTEGER NOT NULL,
     signature TEXT NOT NULL,
+    price_wei TEXT NOT NULL DEFAULT '0',
     PRIMARY KEY (epoch_id, bet_id)
 );
 CREATE INDEX IF NOT EXISTS receipts_by_seed ON receipts(epoch_id, client_seed);
@@ -45,6 +53,14 @@ export function openDb(path: string): Database.Database {
     db.pragma("journal_mode = WAL");
     db.pragma("foreign_keys = ON");
     db.exec(SCHEMA);
+    const cols = db.prepare("PRAGMA table_info(operators)").all() as { name: string }[];
+    if (!cols.some((c) => c.name === "owner_wallet")) {
+        db.exec("ALTER TABLE operators ADD COLUMN owner_wallet TEXT");
+    }
+    const receiptCols = db.prepare("PRAGMA table_info(receipts)").all() as { name: string }[];
+    if (!receiptCols.some((c) => c.name === "price_wei")) {
+        db.exec("ALTER TABLE receipts ADD COLUMN price_wei TEXT NOT NULL DEFAULT '0'");
+    }
     return db;
 }
 
@@ -52,6 +68,15 @@ export interface OperatorRow {
     id: number;
     name: string;
     api_key_hash: string;
+    created_at: number;
+    owner_wallet: string | null;
+}
+
+export interface DepositRow {
+    tx_hash: string;
+    operator_id: number;
+    from_wallet: string;
+    amount_wei: string;
     created_at: number;
 }
 
@@ -85,4 +110,5 @@ export interface ReceiptRow {
     payout_bp: number;
     timestamp: number;
     signature: string;
+    price_wei: string;
 }

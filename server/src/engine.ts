@@ -97,7 +97,7 @@ export class Engine {
         return this.epochRow(epochId)!;
     }
 
-    play(input: { operatorId: number; clientSeed: string; rule: Rule; nonce?: number }): {
+    play(input: { operatorId: number; clientSeed: string; rule: Rule; nonce?: number; priceWei?: string }): {
         signed: SignedReceipt;
         epochId: number;
         betId: number;
@@ -138,7 +138,7 @@ export class Engine {
         const signed = signReceipt(receipt, this.domain, this.key);
         this.db
             .prepare(
-                "INSERT INTO receipts (epoch_id, bet_id, operator_id, client_seed, nonce, rule_hash, draws, win, payout_bp, timestamp, signature) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO receipts (epoch_id, bet_id, operator_id, client_seed, nonce, rule_hash, draws, win, payout_bp, timestamp, signature, price_wei) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             )
             .run(
                 epoch.epoch_id,
@@ -152,6 +152,7 @@ export class Engine {
                 outcome.payoutBp,
                 Number(receipt.timestamp),
                 signed.signature,
+                input.priceWei ?? "0",
             );
         return { signed, epochId: epoch.epoch_id, betId };
     }

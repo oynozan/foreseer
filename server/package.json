@@ -18,10 +18,11 @@
     "@nestjs/common": "^11.1.29",
     "@nestjs/core": "^11.1.29",
     "@nestjs/platform-express": "^11.1.29",
+    "@noble/hashes": "^2.3.0",
     "better-sqlite3": "^13.0.3",
+    "foreseer-sdk": "file:../packages/ts",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.2",
-    "foreseer-sdk": "file:../packages/ts"
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@swc/core": "^1.15.47",

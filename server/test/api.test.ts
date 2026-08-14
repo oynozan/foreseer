@@ -58,7 +58,7 @@ describe("api", () => {
     it("health reports the tee identity", async () => {
         const res = await call("GET", "/health");
         expect(res.status).toBe(200);
-        expect(res.json).toEqual({ ok: true, teeId: engine.teeId, chainId: 114 });
+        expect(res.json).toEqual({ ok: true, teeId: engine.teeId, chainId: 114, treasury: null });
     });
 
     it("serves public reads with open CORS", async () => {

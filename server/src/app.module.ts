@@ -6,9 +6,13 @@ import type { NestExpressApplication } from "@nestjs/platform-express";
 import type Database from "better-sqlite3";
 import type { Engine } from "./engine";
 import { ApiExceptionFilter } from "./filters";
-import { ADMIN_KEY, DB, ENGINE, PLAY_RATE, PRICE_PER_PLAY_WEI } from "./tokens";
+import { WalletSessions } from "./wallet";
+import type { ChainGateway } from "./wallet";
+import { ADMIN_KEY, CHAIN, DB, ENGINE, PLAY_RATE, PRICE_PER_PLAY_WEI, SESSIONS } from "./tokens";
 import {
     AdminController,
+    AuthController,
+    BillingController,
     EpochsController,
     HealthController,
     MetricsController,
@@ -26,6 +30,8 @@ export interface AppOptions {
     playLimit?: number;
     playWindowSeconds?: number;
     pricePerPlayWei?: string;
+    chain?: ChainGateway;
+    sessions?: WalletSessions;
 }
 
 @Module({})
@@ -41,6 +47,8 @@ export class AppModule {
                 PlayController,
                 EpochsController,
                 VerifyController,
+                AuthController,
+                BillingController,
             ],
             providers: [
                 { provide: DB, useValue: options.db },
@@ -51,6 +59,8 @@ export class AppModule {
                     useValue: { limit: options.playLimit ?? 60, windowSeconds: options.playWindowSeconds ?? 10 },
                 },
                 { provide: PRICE_PER_PLAY_WEI, useValue: BigInt(options.pricePerPlayWei ?? "0").toString() },
+                { provide: CHAIN, useValue: options.chain ?? null },
+                { provide: SESSIONS, useValue: options.sessions ?? new WalletSessions() },
                 { provide: APP_FILTER, useClass: ApiExceptionFilter },
             ],
         };
