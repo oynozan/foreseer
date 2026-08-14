@@ -4,9 +4,11 @@ import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
     CLIENT_SEED_RE,
+    pocketColor,
     receiptDigest,
     recoverSigner,
     resolveOutcome,
+    roulette,
     ruleHash,
     seedCommit as hashSeed,
     toBytes,
@@ -17,28 +19,20 @@ import {
 import { verifyReceiptSignature } from "foreseer-sdk/verify";
 import { api, apiRaw, cfg, operatorHeaders } from "./config.mjs";
 
-export const RED = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36];
-const BLACK = Array.from({ length: 36 }, (_, i) => i + 1).filter((n) => !RED.includes(n));
-
-// Exact 99 percent RTP: straight 36.63x, color 2.035x
-const eq = (n) => ({ op: "==", l: { r: 0 }, r: { c: n } });
-const random = { type: "int", min: 0, max: 36, count: 1 };
+const FLAT_BETS = ["red", "black", "even", "odd", "low", "high"];
 
 export function ruleFor(bet) {
-    if (bet?.type === "straight" && Number.isInteger(bet.number) && bet.number >= 0 && bet.number <= 36) {
-        return { v: 0, random, win: eq(bet.number), payout_bp: 366300 };
-    }
-    if (bet?.type === "red" || bet?.type === "black") {
-        const set = bet.type === "red" ? RED : BLACK;
-        return { v: 0, random, win: { op: "or", args: set.map(eq) }, payout_bp: 20350 };
+    try {
+        if (bet?.type === "straight") return roulette({ type: "straight", number: bet.number });
+        if (FLAT_BETS.includes(bet?.type)) return roulette({ type: bet.type });
+        if (bet?.type === "dozen" || bet?.type === "column") return roulette({ type: bet.type, index: bet.index });
+    } catch {
+        return null;
     }
     return null;
 }
 
-export function colorOf(n) {
-    if (n === 0) return "green";
-    return RED.includes(n) ? "red" : "black";
-}
+export const colorOf = pocketColor;
 
 const health = await api("GET", "/health");
 const domain = { name: "Foreseer", version: "0", chainId: BigInt(health.chainId) };
@@ -69,7 +63,9 @@ async function spin(body) {
         return { status: 400, json: { error: "clientSeed must match ^[A-Za-z0-9_-]{1,64}$" } };
     }
     const rule = ruleFor(body.bet);
-    if (rule === null) return { status: 400, json: { error: "bet must be straight 0..36, red, or black" } };
+    if (rule === null) {
+        return { status: 400, json: { error: "bet must be straight 0..36, red, black, even, odd, low, high, dozen or column" } };
+    }
     const hash = await ensureRegistered(rule);
     const played = await apiRaw("POST", "/play", { clientSeed: body.clientSeed, ruleHash: hash }, operatorHeaders());
     if (played.status === 402) return { status: 402, json: { error: "casino balance empty, run: node topup.mjs" } };
