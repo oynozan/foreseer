@@ -1,6 +1,6 @@
 # Introduction
 
-`@foreseer/sdk` is the reference implementation of FORESEER-SPEC v0.1: the
+`foreseer-sdk` is the reference implementation of FORESEER-SPEC v0.1: the
 consensus engine, the verifier, and a reference TEE, in one dependency-light
 package. It has exactly two runtime dependencies (`@noble/hashes` and
 `@noble/curves`), no network code, no native modules, and it runs in Node
@@ -14,16 +14,16 @@ golden test vectors enforce that in CI for all three.
 
 | Import | Contents |
 | --- | --- |
-| `@foreseer/sdk` | types, byte stream, draws, rules, receipts, commit, Merkle, presets |
-| `@foreseer/sdk/rules` | rule AST validation, canonical JSON, hashing, evaluation |
-| `@foreseer/sdk/verify` | the offline verification checks plus `verifyEpoch` |
-| `@foreseer/sdk/reference` | `ReferenceTee`, `generateClientSeed`, test constants |
+| `foreseer-sdk` | types, byte stream, draws, rules, receipts, commit, Merkle, presets |
+| `foreseer-sdk/rules` | rule AST validation, canonical JSON, hashing, evaluation |
+| `foreseer-sdk/verify` | the offline verification checks plus `verifyEpoch` |
+| `foreseer-sdk/reference` | `ReferenceTee`, `generateClientSeed`, test constants |
 
 A 30 second taste:
 
 ```ts
-import { dice } from "@foreseer/sdk";
-import { ReferenceTee } from "@foreseer/sdk/reference";
+import { dice } from "foreseer-sdk";
+import { ReferenceTee } from "foreseer-sdk/reference";
 
 const tee = new ReferenceTee();
 tee.openEpoch();

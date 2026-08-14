@@ -9,9 +9,9 @@ import {
     toBytes,
     verifyCommit,
     verifyMerkleProof,
-} from "@foreseer/sdk";
-import { verifyOutcome } from "@foreseer/sdk/verify";
-import type { Hex, Receipt, Rule } from "@foreseer/sdk";
+} from "foreseer-sdk";
+import { verifyOutcome } from "foreseer-sdk/verify";
+import type { Hex, Receipt, Rule } from "foreseer-sdk";
 import { ApiError, rowToReceipt } from "./engine";
 import type { Engine } from "./engine";
 import type { EpochRow, OperatorRow, RuleRow } from "./db";

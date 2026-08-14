@@ -15,7 +15,7 @@ restart mid-epoch without losing nonces, betIds, or seeds.
 ## Run
 
 ```sh
-pnpm install --ignore-workspace   # @foreseer/sdk must be built first (pnpm build in packages/ts)
+pnpm install --ignore-workspace   # foreseer-sdk must be built first (pnpm build in packages/ts)
 pnpm start                        # or: pnpm dev (watch mode)
 pnpm test
 pnpm typecheck
@@ -64,6 +64,6 @@ CORS is enabled for every origin, so browser verify widgets can call the
 public read endpoints directly.
 
 The verify endpoint is a convenience; the honest path is client-side
-verification with `@foreseer/sdk` against `/epochs/:id` (revealed seed),
+verification with `foreseer-sdk` against `/epochs/:id` (revealed seed),
 `/rules/:hash`, and `/epochs/:id/proof/:betId`. The API tests do exactly
 that.

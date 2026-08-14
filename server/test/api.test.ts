@@ -1,9 +1,9 @@
 import type { AddressInfo } from "node:net";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import type { INestApplication } from "@nestjs/common";
-import { dice, receiptDigest, recoverSigner, toBytes, verifyCommit, verifyMerkleProof } from "@foreseer/sdk";
-import { verifyOutcome } from "@foreseer/sdk/verify";
-import type { Hex, Receipt } from "@foreseer/sdk";
+import { dice, receiptDigest, recoverSigner, toBytes, verifyCommit, verifyMerkleProof } from "foreseer-sdk";
+import { verifyOutcome } from "foreseer-sdk/verify";
+import type { Hex, Receipt } from "foreseer-sdk";
 import { openDb } from "../src/db";
 import { Engine } from "../src/engine";
 import { createApp } from "../src/app.module";

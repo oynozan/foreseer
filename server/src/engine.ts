@@ -11,10 +11,10 @@ import {
     resolveOutcome,
     toBytes,
     toHex,
-} from "@foreseer/sdk";
-import { addressOfPrivateKey } from "@foreseer/sdk";
-import { REFERENCE_CODE_VERSION, REFERENCE_TEST_KEY } from "@foreseer/sdk/reference";
-import type { Eip712Domain, EpochClose, Hex, Receipt, Rule, SignedReceipt } from "@foreseer/sdk";
+} from "foreseer-sdk";
+import { addressOfPrivateKey } from "foreseer-sdk";
+import { REFERENCE_CODE_VERSION, REFERENCE_TEST_KEY } from "foreseer-sdk/reference";
+import type { Eip712Domain, EpochClose, Hex, Receipt, Rule, SignedReceipt } from "foreseer-sdk";
 import type { EpochRow, ReceiptRow } from "./db";
 
 export class ApiError extends Error {

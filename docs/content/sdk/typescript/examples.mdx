@@ -6,9 +6,9 @@ values in the comments are real outputs from the golden test seed.
 ## Play a full epoch, step by step
 
 ```ts
-import { dice, merkleProof, receiptDigest, toBytes } from "@foreseer/sdk";
-import { ReferenceTee } from "@foreseer/sdk/reference";
-import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "@foreseer/sdk/verify";
+import { dice, merkleProof, receiptDigest, toBytes } from "foreseer-sdk";
+import { ReferenceTee } from "foreseer-sdk/reference";
+import { verifyCommit, verifyMerkleProof, verifyOutcome, verifyReceiptSignature } from "foreseer-sdk/verify";
 
 // 1. Boot a TEE and open an epoch.
 //    The seed commitment is published before any bet exists.
@@ -47,7 +47,7 @@ console.log({
 exactly what failed and where:
 
 ```ts
-import { verifyEpoch } from "@foreseer/sdk/verify";
+import { verifyEpoch } from "foreseer-sdk/verify";
 
 const result = verifyEpoch({
     receipts,            // [{ receipt, signature }, ...] in betId order
@@ -93,8 +93,8 @@ const { teeId } = await fetch(`${base}/health`).then((r) => r.json());
 Everything consensus-critical is exported directly:
 
 ```ts
-import { ByteStream, drawInt, MerkleTree, toBytes, toHex } from "@foreseer/sdk";
-import { canonicalRuleBytes, ruleHash, resolveOutcome } from "@foreseer/sdk/rules";
+import { ByteStream, drawInt, MerkleTree, toBytes, toHex } from "foreseer-sdk";
+import { canonicalRuleBytes, ruleHash, resolveOutcome } from "foreseer-sdk/rules";
 
 const seed = toBytes("0x000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f");
 

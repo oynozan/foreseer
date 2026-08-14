@@ -4,7 +4,7 @@ The complete public API, grouped by module. Types shown are simplified
 TypeScript; `Hex` is a `0x`-prefixed lowercase hex string and `bigint`
 fields are uint64 unless noted.
 
-## Core types (`@foreseer/sdk`)
+## Core types (`foreseer-sdk`)
 
 | Export | Shape |
 | --- | --- |
@@ -20,7 +20,7 @@ fields are uint64 unless noted.
 Helpers: `toHex(bytes): Hex`, `toBytes(hex | bytes): Uint8Array`, plus
 `assertServerSeed`, `assertClientSeed`, `assertUint64`, `assertUint32`.
 
-## Derivation (`@foreseer/sdk`)
+## Derivation (`foreseer-sdk`)
 
 | Function | What it does |
 | --- | --- |
@@ -29,7 +29,7 @@ Helpers: `toHex(bytes): Hex`, `toBytes(hex | bytes): Uint8Array`, plus
 | `drawInt(stream, min, max)` | one unbiased draw via rejection sampling (spec section 3) |
 | `drawInts(stream, min, max, count)` | `count` sequential draws from the same stream |
 
-## Rules (`@foreseer/sdk/rules`)
+## Rules (`foreseer-sdk/rules`)
 
 | Function | What it does |
 | --- | --- |
@@ -43,7 +43,7 @@ Helpers: `toHex(bytes): Hex`, `toBytes(hex | bytes): Uint8Array`, plus
 Presets (exported from the root): `dice({ target, mode: "over" | "under" })`
 and `coinflip()`, both paying exact 99 percent RTP.
 
-## Receipts and signatures (`@foreseer/sdk`)
+## Receipts and signatures (`foreseer-sdk`)
 
 | Function | What it does |
 | --- | --- |
@@ -55,7 +55,7 @@ and `coinflip()`, both paying exact 99 percent RTP.
 | `signReceipt(receipt, domain, privateKey)` | convenience: digest plus sign, returns `SignedReceipt` |
 | `addressOfPrivateKey(key)` / `addressOfPublicKey(pub)` | Ethereum-style addresses |
 
-## Commit and epoch close (`@foreseer/sdk`)
+## Commit and epoch close (`foreseer-sdk`)
 
 | Function | What it does |
 | --- | --- |
@@ -64,7 +64,7 @@ and `coinflip()`, both paying exact 99 percent RTP.
 | `epochCloseStructHash(close)` / `epochCloseDigest(close, domain)` | EIP-712 hashing of the close struct |
 | `signEpochClose(close, domain, privateKey)` | the epoch close signature |
 
-## Merkle (`@foreseer/sdk`)
+## Merkle (`foreseer-sdk`)
 
 | Function | What it does |
 | --- | --- |
@@ -73,7 +73,7 @@ and `coinflip()`, both paying exact 99 percent RTP.
 | `verifyMerkleProof(leaf, proof, root)` | sorted-pair keccak verification, OpenZeppelin compatible |
 | `hashPair(a, b)` | the sorted-pair parent hash |
 
-## Verification (`@foreseer/sdk/verify`)
+## Verification (`foreseer-sdk/verify`)
 
 | Function | What it does |
 | --- | --- |
@@ -82,7 +82,7 @@ and `coinflip()`, both paying exact 99 percent RTP.
 | `verifyCommit`, `verifyMerkleProof` | re-exported checks 3 and 6 |
 | `verifyEpoch(input)` | all offline checks over a whole epoch; returns `{ ok, teeId, receiptCount, failures[] }` with per-betId attribution |
 
-## Reference TEE (`@foreseer/sdk/reference`)
+## Reference TEE (`foreseer-sdk/reference`)
 
 | Export | What it does |
 | --- | --- |

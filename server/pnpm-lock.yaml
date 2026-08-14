@@ -8,7 +8,7 @@ importers:
 
   .:
     dependencies:
-      '@foreseer/sdk':
+      'foreseer-sdk':
         specifier: file:../packages/ts
         version: file:../packages/ts
       '@nestjs/common':
@@ -216,7 +216,7 @@ packages:
     cpu: [x64]
     os: [win32]
 
-  '@foreseer/sdk@file:../packages/ts':
+  'foreseer-sdk@file:../packages/ts':
     resolution: {directory: ../packages/ts, type: directory}
     engines: {node: '>=20'}
 
@@ -1306,7 +1306,7 @@ snapshots:
   '@esbuild/win32-x64@0.28.2':
     optional: true
 
-  '@foreseer/sdk@file:../packages/ts':
+  'foreseer-sdk@file:../packages/ts':
     dependencies:
       '@noble/curves': 2.3.0
       '@noble/hashes': 2.3.0

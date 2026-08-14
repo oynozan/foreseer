@@ -20,7 +20,7 @@ implementations must match exactly.
 | Path | Contents |
 | --- | --- |
 | `spec/` | FORESEER-SPEC v0.1 and golden test vectors (committed deliverables) |
-| `packages/ts` | npm package `@foreseer/sdk`: core, verifier, ReferenceTee. Git submodule |
+| `packages/ts` | npm package `foreseer-sdk`: core, verifier, ReferenceTee. Git submodule |
 | `server/` | Orchestration service: epochs, SQLite receipt store, verify API (Phase 2) |
 | `tee/` | Go FCE extension, engine matching the vectors, contracts (Phases 3 and 4) |
 | `docs-site/` | Docs site and the browser receipt verifier (Phase 5) |
