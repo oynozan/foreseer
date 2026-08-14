@@ -284,13 +284,30 @@ This is what turns checks 2 and 4 from interface into fact. Hackathon rules
 accept `SIMULATED_TEE=true` on Coston2, but the endpoint must be a stable
 public HTTPS name, which `tee.foreseer.net` now is.
 
-You need Flare's indexer database credentials from the organizers.
+The proxy reads Flare's Coston2 indexer, so it needs read-only credentials
+for that database. Ask Flare support or @FlareDevs for a username and
+password; the host and database name are public and fixed:
 
 ```sh
 cd /srv/foreseer/tee
 cp config/proxy/extension_proxy.coston2.docker.toml.example config/proxy/extension_proxy.coston2.docker.toml
-# fill the [db] block with the indexer host, name, user and password
 ```
+
+```toml
+[db]
+host = "34.38.42.208"
+port = 3306
+database = "indexer"
+username = "<from flare>"
+password = "<from flare>"
+log_queries = false
+```
+
+Coston2 needs no VPN. The `35.241.249.150` host that appears in older
+copies of the scaffold docs is dead, and pointing at it produces a
+`connecting to database ... no such host` panic and a 502 from nginx. The
+current value is documented at
+https://dev.flare.network/fcc/guides/getting-started#step-3-configure-the-indexer-database
 
 Create `.env.coston2`:
 
