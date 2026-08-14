@@ -1,54 +1,37 @@
 import { DOCS } from "@/lib/links";
 
-const STEPS: [string, string, string][] = [
-    [
-        "01",
-        "Send us your operator wallet.",
-        "We create your operator account bound to that address and hand back one API key. It is shown once, and we keep only its SHA-256 hash.",
-    ],
-    [
-        "02",
-        "Top up from that wallet.",
-        "An ordinary onchain transfer to the Foreseer treasury. Post the transaction hash, we verify sender, recipient and confirmation over RPC, then credit it exactly once.",
-    ],
-    [
-        "03",
-        "Register your game.",
-        "Rules are JSON documents. Take a preset (roulette, dice, coinflip, towers) or write your own, and you get a rule hash back to reuse forever.",
-    ],
-    [
-        "04",
-        "Call play, once per bet.",
-        "One HTTP call from your backend carrying the player's client seed. The key stays server side and never reaches a browser.",
-    ],
-    [
-        "05",
-        "Settle from the signed receipt.",
-        "Check the TEE signature, then pay out using payoutBp. Refuse to settle anything that does not verify.",
-    ],
-    [
-        "06",
-        "Watch it in the dashboard.",
-        "Connect that same wallet, sign a nonce, and read your balance, deposits and every play. There is no password anywhere.",
-    ],
+type Step = { n: string; phase: string; title: string; note: string; code?: string };
+
+const STEPS: Step[] = [
+    { n: "01", phase: "SETUP", title: "Get your key", note: "Bound to your wallet. Shown once." },
+    { n: "02", phase: "FUND", title: "Top up", note: "Pay the treasury, post the tx hash." },
+    { n: "03", phase: "BUILD", title: "Register a rule", note: "A preset, or JSON you wrote." },
+    { n: "04", phase: "PLAY", title: "Call play", note: "One request per bet.", code: "POST /play" },
+    { n: "05", phase: "SETTLE", title: "Pay the winner", note: "Check the signature first.", code: "payoutBp" },
+    { n: "06", phase: "WATCH", title: "Open the dashboard", note: "Same wallet, one signature." },
 ];
 
-const PLANES: [string, string, string][] = [
-    [
-        "YOUR BACKEND",
-        "One API key",
-        "Sent as x-api-key on every play. Machines cannot sign wallet messages thousands of times a second, and you should never put a funding key on a server that faces players.",
-    ],
-    [
-        "YOU",
-        "Your wallet",
-        "A signature logs you into the dashboard, read only. Nothing to remember, nothing to phish, no shared secret between you and us.",
-    ],
-    [
-        "YOUR MONEY",
-        "The chain",
-        "Top-ups are real transfers signed by your wallet. A payment that did not come from your registered address is rejected, whoever submits it.",
-    ],
+type Plane = { who: string; cred: string; can: string; cannot: string[] };
+
+const PLANES: Plane[] = [
+    {
+        who: "YOUR BACKEND",
+        cred: "x-api-key",
+        can: "Play bets, spend prepaid balance",
+        cannot: ["Withdraw a single wei", "Change your owner wallet", "Open your dashboard"],
+    },
+    {
+        who: "YOU",
+        cred: "wallet signature",
+        can: "Read balance, deposits, every play",
+        cannot: ["Expire into a support ticket", "Be stolen from our database"],
+    },
+    {
+        who: "YOUR MONEY",
+        cred: "onchain transfer",
+        can: "Fund your balance from your wallet",
+        cannot: ["Arrive from another address", "Be credited twice"],
+    },
 ];
 
 export default function GettingStarted() {
@@ -56,40 +39,66 @@ export default function GettingStarted() {
         <div className="pt-12">
             <div className="text-center">
                 <h2 className="text-[clamp(28px,3.2vw,40px)] font-medium leading-[1.1] tracking-[-0.02em]">
-                    From zero to your first bet, <span className="text-primary">in six steps.</span>
+                    Six steps to your <span className="text-primary">first bet.</span>
                 </h2>
-                <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-muted">
-                    Your wallet says who you are, one key lets your backend play, and the chain moves the money. Three
-                    credentials, three jobs, and none of them can do another job.
+                <p className="mx-auto mt-4 max-w-lg text-[15px] leading-relaxed text-muted">
+                    Your wallet is who you are. One key runs your backend. The chain moves the money.
                 </p>
             </div>
-            <ol className="mt-10 grid gap-4 md:grid-cols-3">
-                {STEPS.map(([num, lead, rest]) => (
-                    <li key={num} className="card p-6">
-                        <div className="tech text-[11px] text-muted">{num}</div>
-                        <p className="keepcase mt-4 text-[14px] leading-relaxed text-muted">
-                            <strong className="font-medium text-ink">{lead}</strong> {rest}
-                        </p>
+
+            <ol className="mt-12 border-t border-line md:grid md:grid-cols-6">
+                {STEPS.map((s) => (
+                    <li key={s.n} className="relative border-b border-line py-6 pl-4 md:border-b-0 md:pr-4 md:pl-3">
+                        <span className="absolute top-0 left-0 h-px w-6 bg-primary" aria-hidden="true" />
+                        <span className="absolute top-0 left-0 h-4 w-px bg-primary md:hidden" aria-hidden="true" />
+                        <div className="tech flex items-baseline gap-2 text-[10px]">
+                            <span className="text-primary">{s.n}</span>
+                            <span className="text-muted">{s.phase}</span>
+                        </div>
+                        <h3 className="mt-3 text-[15px] font-medium leading-tight">{s.title}</h3>
+                        <p className="keepcase mt-1.5 text-[13px] leading-snug text-muted">{s.note}</p>
+                        {s.code && (
+                            <code className="chip keepcase mt-3 inline-flex text-[11px] text-ink">{s.code}</code>
+                        )}
                     </li>
                 ))}
             </ol>
-            <div className="card mt-10 p-8">
-                <h3 className="text-[18px] font-medium">Three credentials, three jobs</h3>
-                <div className="mt-6 grid gap-6 md:grid-cols-3">
-                    {PLANES.map(([who, what, why]) => (
-                        <div key={who}>
-                            <div className="tech text-[11px] text-muted">{who}</div>
-                            <div className="mt-2 text-[15px] font-medium text-primary">{what}</div>
-                            <p className="keepcase mt-2 text-[14px] leading-relaxed text-muted">{why}</p>
+
+            <div className="card mt-12 overflow-hidden">
+                <div className="flex items-baseline justify-between gap-4 border-b border-line px-6 py-4">
+                    <h3 className="text-[16px] font-medium">Three credentials, three jobs</h3>
+                    <span className="tech text-[10px] text-muted">NONE OF THEM DOES ANOTHER JOB</span>
+                </div>
+                <div className="grid divide-y divide-line md:grid-cols-3 md:divide-x md:divide-y-0">
+                    {PLANES.map((p) => (
+                        <div key={p.who} className="p-6">
+                            <div className="tech text-[10px] text-muted">{p.who}</div>
+                            <code className="chip keepcase mt-3 inline-flex text-[12px] text-ink">{p.cred}</code>
+                            <p className="mt-4 flex gap-2 text-[14px] leading-snug">
+                                <span aria-hidden="true" className="text-mint-ink">
+                                    &#10003;
+                                </span>
+                                <span className="keepcase">{p.can}</span>
+                            </p>
+                            <ul className="mt-3 space-y-1.5">
+                                {p.cannot.map((c) => (
+                                    <li key={c} className="flex gap-2 text-[13px] leading-snug text-muted">
+                                        <span aria-hidden="true" className="text-red">
+                                            &#10007;
+                                        </span>
+                                        <span className="keepcase">{c}</span>
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     ))}
                 </div>
-                <p className="keepcase mt-8 border-t border-line pt-6 text-[14px] leading-relaxed text-muted">
-                    <strong className="font-medium text-ink">So a leaked key is bounded.</strong> It can spend the
-                    balance you prepaid and nothing else: there is no withdrawal endpoint anywhere in the API, your
-                    owner wallet cannot be changed through it, and your dashboard still needs your signature.
+                <p className="border-t border-line bg-mint/40 px-6 py-4 text-[14px] text-ink">
+                    <strong className="font-medium">A stolen key spends prepaid balance.</strong>{" "}
+                    <span className="text-muted">Nothing else, ever.</span>
                 </p>
             </div>
+
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
                 <a
                     href={DOCS.api}
