@@ -69,7 +69,17 @@ svg.flowchart .flowchart-link {
     stroke: var(--foreseer-ink) !important;
 }
 
-/* Footer stays on the plain white background */
-footer {
+/* Solid white chrome everywhere: no translucency, no gray bands */
+body {
+    background: #ffffff !important;
+}
+
+.nextra-navbar-blur {
+    background: #ffffff !important;
+    backdrop-filter: none !important;
+}
+
+footer,
+div:has(> footer) {
     background: #ffffff !important;
 }
