@@ -40,6 +40,7 @@ export interface EpochView {
     seedCommit: string;
     clientSeed: string;
     teeId: string;
+    open: boolean;
     plays: PlayRecord[];
     reveal: RevealView | null;
 }
@@ -91,7 +92,7 @@ async function build(config: DemoConfig): Promise<TeeHandle> {
     }
 
     function snapshot(): EpochView {
-        return { epochId, seedCommit, clientSeed, teeId: tee.teeId, plays: [...plays], reveal };
+        return { epochId, seedCommit, clientSeed, teeId: tee.teeId, open, plays: [...plays], reveal };
     }
 
     openEpoch();

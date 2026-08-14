@@ -68,7 +68,8 @@ export default function CoinflipDemo() {
         [applyRest],
     );
 
-    const { sectionRef, phase, view, last, error, full, play, reveal, nextEpoch } = useDemoEpoch(CONFIG, animate);
+    const { sectionRef, phase, view, last, error, full, canPlay, canReveal, closed, play, reveal, nextEpoch } =
+        useDemoEpoch(CONFIG, animate);
 
     useEffect(() => {
         applyRest();
@@ -76,8 +77,6 @@ export default function CoinflipDemo() {
     }, [applyRest]);
 
     const flipping = phase === "playing";
-    const canFlip = !flipping && phase !== "revealing" && phase !== "revealed" && !full;
-    const canReveal = (view?.plays.length ?? 0) > 0 && phase !== "revealed" && !flipping;
 
     return (
         <div ref={sectionRef} data-demo="coinflip" className="pt-12" aria-busy={flipping}>
@@ -116,7 +115,7 @@ export default function CoinflipDemo() {
             </p>
 
             <div className={`${ROW} sm:justify-end`}>
-                {phase === "revealed" ? (
+                {closed ? (
                     <button type="button" onClick={nextEpoch} className={PRIMARY}>
                         Start a new epoch
                     </button>
@@ -124,8 +123,8 @@ export default function CoinflipDemo() {
                     <button
                         type="button"
                         onClick={() => void play()}
-                        aria-disabled={!canFlip}
-                        className={canFlip ? PRIMARY : MUTED}
+                        aria-disabled={!canPlay}
+                        className={canPlay ? PRIMARY : MUTED}
                     >
                         {full ? "Epoch full" : flipping ? "Flipping" : "Flip the coin"}
                     </button>

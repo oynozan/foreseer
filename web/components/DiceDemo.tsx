@@ -77,7 +77,8 @@ export default function DiceDemo() {
         [applyRest],
     );
 
-    const { sectionRef, phase, view, last, error, full, play, reveal, nextEpoch } = useDemoEpoch(CONFIG, animate);
+    const { sectionRef, phase, view, last, error, full, canPlay, canReveal, closed, play, reveal, nextEpoch } =
+        useDemoEpoch(CONFIG, animate);
 
     useEffect(() => {
         applyRest();
@@ -85,8 +86,6 @@ export default function DiceDemo() {
     }, [applyRest]);
 
     const rolling = phase === "playing";
-    const canRoll = !rolling && phase !== "revealing" && phase !== "revealed" && !full;
-    const canReveal = (view?.plays.length ?? 0) > 0 && phase !== "revealed" && !rolling;
     // the reading only stands while the selection still matches the receipt
     const fresh = last !== null && rolledWith?.target === target && rolledWith?.mode === mode;
 
@@ -180,12 +179,12 @@ export default function DiceDemo() {
             </p>
 
             <div className={ROW}>
-                {phase === "revealed" ? (
+                {closed ? (
                     <button type="button" onClick={nextEpoch} className={PRIMARY}>
                         Start a new epoch
                     </button>
                 ) : (
-                    <button type="button" onClick={onRoll} aria-disabled={!canRoll} className={canRoll ? PRIMARY : MUTED}>
+                    <button type="button" onClick={onRoll} aria-disabled={!canPlay} className={canPlay ? PRIMARY : MUTED}>
                         {full ? "Epoch full" : rolling ? "Rolling" : "Roll the dice"}
                     </button>
                 )}

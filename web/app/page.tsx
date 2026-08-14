@@ -22,7 +22,7 @@ export default function Home() {
                 </Band>
                 <div className="band">
                     <div className="col grid md:grid-cols-2">
-                        <section id="demo-coinflip" className="pb-6 md:pr-12">
+                        <section id="demo-coinflip" className="pb-6 md:pr-6">
                             <div className="meta tech" aria-hidden="true">
                                 <span>[ 02 / 08 ]</span>
                                 <span>GAMES // COINFLIP //</span>
@@ -31,7 +31,7 @@ export default function Home() {
                         </section>
                         <section
                             id="demo-dice"
-                            className="mt-10 border-t border-line pb-6 md:mt-0 md:border-t-0 md:border-l md:pl-12"
+                            className="mt-10 border-t border-line pb-6 md:mt-0 md:border-t-0 md:border-l md:pl-6"
                         >
                             <div className="meta tech" aria-hidden="true">
                                 <span>[ 03 / 08 ]</span>

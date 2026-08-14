@@ -14,6 +14,9 @@ export interface DemoEpoch {
     error: string;
     plays: PlayRecord[];
     full: boolean;
+    canPlay: boolean;
+    canReveal: boolean;
+    closed: boolean;
     play: (rule?: Rule) => Promise<void>;
     reveal: () => void;
     nextEpoch: () => void;
@@ -30,12 +33,10 @@ export function useDemoEpoch(config: DemoConfig, animate: (record: PlayRecord) =
     const [view, setView] = useState<EpochView | null>(null);
     const [last, setLast] = useState<PlayRecord | null>(null);
     const [error, setError] = useState("");
-    const phaseRef = useRef(phase);
 
-    // latest closures, read only from handlers
+    // latest closure, read only from handlers
     useEffect(() => {
         animateRef.current = animate;
-        phaseRef.current = phase;
     });
 
     useEffect(() => {
@@ -79,65 +80,91 @@ export function useDemoEpoch(config: DemoConfig, animate: (record: PlayRecord) =
         return () => io.disconnect();
     }, [arm]);
 
-    const play = useCallback(async (rule?: Rule) => {
-        // the ref guards across the await, state cannot
-        if (busyRef.current) return;
-        if (phaseRef.current === "revealing" || phaseRef.current === "revealed") return;
-        busyRef.current = true;
+    const play = useCallback(
+        async (rule?: Rule) => {
+            // the engine state decides, never the rendered phase
+            if (busyRef.current) return;
+            busyRef.current = true;
 
-        const handle = teeRef.current ?? (await arm());
-        if (!handle || !aliveRef.current) {
+            const handle = teeRef.current ?? (await arm());
+            if (!handle || !aliveRef.current) {
+                busyRef.current = false;
+                return;
+            }
+            const now = handle.snapshot();
+            if (!now.open || now.plays.length >= config.maxPlays) {
+                busyRef.current = false;
+                setView(now);
+                return;
+            }
+
+            let record: PlayRecord;
+            try {
+                record = handle.play(rule);
+            } catch (err) {
+                busyRef.current = false;
+                setError(err instanceof Error ? err.message : "play failed");
+                setPhase("error");
+                return;
+            }
+
+            setPhase("playing");
+            setLast(null);
+            try {
+                await animateRef.current(record);
+            } catch {
+                // a cancelled animation still settles on the receipt
+            }
             busyRef.current = false;
-            return;
-        }
-
-        let record: PlayRecord;
-        try {
-            record = handle.play(rule);
-        } catch (err) {
-            busyRef.current = false;
-            setError(err instanceof Error ? err.message : "play failed");
-            setPhase("error");
-            return;
-        }
-
-        setPhase("playing");
-        setLast(null);
-        try {
-            await animateRef.current(record);
-        } catch {
-            // a cancelled animation still settles on the receipt
-        }
-        busyRef.current = false;
-        if (!aliveRef.current) return;
-        setLast(record);
-        setView(teeRef.current?.snapshot() ?? null);
-        setPhase("settled");
-    }, [arm]);
+            if (!aliveRef.current) return;
+            setLast(record);
+            setView(handle.snapshot());
+            setPhase("settled");
+        },
+        [arm, config.maxPlays],
+    );
 
     const reveal = useCallback(() => {
+        if (busyRef.current) return;
         const handle = teeRef.current;
-        if (!handle || (view?.plays.length ?? 0) === 0) return;
+        if (!handle) return;
+        const now = handle.snapshot();
+        if (!now.open || now.plays.length === 0) return;
+
+        busyRef.current = true;
         setPhase("revealing");
         try {
             handle.reveal();
             setView(handle.snapshot());
             setPhase("revealed");
         } catch (err) {
+            setView(handle.snapshot());
             setError(err instanceof Error ? err.message : "reveal failed");
             setPhase("error");
         }
-    }, [view]);
+        busyRef.current = false;
+    }, []);
 
     const nextEpoch = useCallback(() => {
+        if (busyRef.current) return;
         const handle = teeRef.current;
         if (!handle) return;
-        setView(handle.startNextEpoch());
-        setLast(null);
-        setPhase("ready");
+        try {
+            setView(handle.startNextEpoch());
+            setLast(null);
+            setError("");
+            setPhase("ready");
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "could not open an epoch");
+            setPhase("error");
+        }
     }, []);
 
     const plays = view?.plays ?? [];
+    const full = plays.length >= config.maxPlays;
+    const open = view === null || view.open;
+    const busy = phase === "playing" || phase === "revealing";
+
     return {
         sectionRef,
         phase,
@@ -145,7 +172,10 @@ export function useDemoEpoch(config: DemoConfig, animate: (record: PlayRecord) =
         last,
         error,
         plays,
-        full: plays.length >= config.maxPlays,
+        full,
+        canPlay: open && !busy && !full,
+        canReveal: open && !busy && plays.length > 0,
+        closed: view !== null && !view.open,
         play,
         reveal,
         nextEpoch,

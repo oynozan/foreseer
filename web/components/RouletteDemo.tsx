@@ -101,7 +101,8 @@ export default function RouletteDemo() {
         [park],
     );
 
-    const { sectionRef, phase, view, last, error, full, play, reveal, nextEpoch } = useDemoEpoch(CONFIG, animate);
+    const { sectionRef, phase, view, last, error, full, canPlay, canReveal, closed, play, reveal, nextEpoch } =
+        useDemoEpoch(CONFIG, animate);
 
     useEffect(() => {
         applyRest();
@@ -109,8 +110,6 @@ export default function RouletteDemo() {
     }, [applyRest]);
 
     const spinning = phase === "playing";
-    const canSpin = !spinning && phase !== "revealing" && phase !== "revealed" && !full;
-    const canReveal = (view?.plays.length ?? 0) > 0 && phase !== "revealed" && !spinning;
 
     return (
         <div ref={sectionRef} data-demo="roulette" className="pt-12" aria-busy={spinning}>
@@ -142,8 +141,8 @@ export default function RouletteDemo() {
                       : ""}
             </p>
 
-            <div className={ROW}>
-                {phase === "revealed" ? (
+            <div className={`${ROW} sm:justify-end`}>
+                {closed ? (
                     <button type="button" onClick={nextEpoch} className={PRIMARY}>
                         Start a new epoch
                     </button>
@@ -151,8 +150,8 @@ export default function RouletteDemo() {
                     <button
                         type="button"
                         onClick={() => void play()}
-                        aria-disabled={!canSpin}
-                        className={canSpin ? PRIMARY : MUTED}
+                        aria-disabled={!canPlay}
+                        className={canPlay ? PRIMARY : MUTED}
                     >
                         {full ? "Epoch full" : spinning ? "Spinning" : "Spin the wheel"}
                     </button>
